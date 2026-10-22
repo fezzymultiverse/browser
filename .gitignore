@@ -1,0 +1,16 @@
+node_modules/
+android/
+ios/
+*.apk
+*.aab
+*.keystore
+local.properties
+.gradle/
+.DS_Store
+*.jks
+
+.android-sdk/
+.gradle-home/
+.npm-cache/
+.ci-signing.*
+build.env

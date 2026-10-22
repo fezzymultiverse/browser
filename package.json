@@ -1,0 +1,20 @@
+{
+  "name": "festers-browser",
+  "version": "1.26.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Festers Browser, a private security-first mobile browser (Capacitor, Android)",
+  "scripts": {
+    "assets": "npm install --no-save @capacitor/assets && capacitor-assets generate --android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/browser": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/filesystem": "^7.0.0",
+    "@capacitor/share": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}
