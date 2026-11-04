@@ -527,11 +527,14 @@ public class FBWebPlugin extends Plugin {
         /** V1.27.7: one cyan neon paw print, toes up. s = paw size in px, rot = degrees, a = 0..1 brightness. A wide soft copy under it is the glow. */
         private void drawPaw(Canvas c, float cx, float cy, float s, float rot, float a) {
             if (a <= 0.02f) return;
-            for (int pass = 0; pass < 2; pass++) {
-                float k = pass == 0 ? 1.55f : 1f;
-                Paint p = pass == 0 ? pawGlow : pawFill;
-                p.setColor(0xFF00E5FF);
-                p.setAlpha((int) ((pass == 0 ? 70 : 255) * a));
+            // V1.27.9: three passes. Pass 0 is a dark navy halo so the cyan paw stays visible on a white page (cyan on white was nearly
+            // invisible while a page was still blank), pass 1 the soft cyan glow, pass 2 the solid paw.
+            for (int pass = 0; pass < 3; pass++) {
+                float k = pass == 0 ? 1.38f : (pass == 1 ? 1.55f : 1f);
+                Paint p = pass == 2 ? pawFill : pawGlow;
+                if (pass == 0) { p.setColor(0xFF061226); p.setAlpha((int) (225 * a)); }
+                else if (pass == 1) { p.setColor(0xFF00E5FF); p.setAlpha((int) (70 * a)); }
+                else { p.setColor(0xFF00E5FF); p.setAlpha((int) (255 * a)); }
                 c.save();
                 c.translate(cx, cy);
                 c.rotate(rot);
@@ -643,6 +646,61 @@ public class FBWebPlugin extends Plugin {
 
     private EdgeView edgeView;
 
+    /** V1.27.9: faint Bojack face with "BOJACK FESTERS BROWSER" under it. Sits at the bottom of the holder, behind the page view, so it only
+     *  shows where a page has not painted anything (a white loading screen, or a page with no background of its own). Pure Canvas shapes, no assets. */
+    private static final class MarkView extends View {
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF r = new RectF();
+        private final float dn;
+        MarkView(Context c) {
+            super(c);
+            dn = c.getResources().getDisplayMetrics().density;
+            setClickable(false);
+            setFocusable(false);
+            setWillNotDraw(false);
+        }
+        private void oval(Canvas c, float cx, float cy, float rx, float ry, int col, float rot) {
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(col);
+            c.save();
+            c.rotate(rot, cx, cy);
+            r.set(cx - rx, cy - ry, cx + rx, cy + ry);
+            c.drawOval(r, p);
+            c.restore();
+        }
+        @Override protected void onDraw(Canvas c) {
+            int w = getWidth(), h = getHeight();
+            if (w <= 0 || h <= 0) return;
+            float size = Math.min(Math.min(w, h) * 0.46f, 190f * dn);
+            float u = size / 100f;
+            float x0 = (w - size) / 2f, y0 = h * 0.40f - size / 2f;
+            // everything below is drawn into one layer so the whole mark gets one even transparency
+            int layer = c.saveLayerAlpha(0, 0, w, h, 38);
+            c.translate(x0, y0);
+            oval(c, 22f * u, 48f * u, 9f * u, 22f * u, 0xFF9A5B1A, 14f);   // left ear
+            oval(c, 78f * u, 48f * u, 9f * u, 22f * u, 0xFF9A5B1A, -14f);  // right ear
+            oval(c, 50f * u, 46f * u, 29f * u, 34f * u, 0xFFE3B04B, 0f);   // head
+            oval(c, 50f * u, 62f * u, 20f * u, 15f * u, 0xFFF6DFA8, 0f);   // muzzle
+            oval(c, 50f * u, 54f * u, 9f * u, 7f * u, 0xFF111111, 0f);     // nose
+            oval(c, 37f * u, 41f * u, 4.6f * u, 4.6f * u, 0xFF111111, 0f); // eyes
+            oval(c, 63f * u, 41f * u, 4.6f * u, 4.6f * u, 0xFF111111, 0f);
+            oval(c, 50f * u, 74f * u, 4.5f * u, 5.5f * u, 0xFFFF6F91, 0f); // tongue
+            c.translate(-x0, -y0);
+            p.setColor(0xFF2A2A33);
+            p.setTextAlign(Paint.Align.CENTER);
+            p.setFakeBoldText(true);
+            p.setTextSize(Math.max(13f * dn, size * 0.115f));
+            p.setLetterSpacing(0.12f);
+            float ty = y0 + size + p.getTextSize() * 1.6f;
+            c.drawText("BOJACK", w / 2f, ty, p);
+            p.setColor(0xFFFF6A00);
+            c.drawText("FESTERS BROWSER", w / 2f, ty + p.getTextSize() * 1.35f, p);
+            p.setFakeBoldText(false);
+            p.setLetterSpacing(0f);
+            c.restoreToCount(layer);
+        }
+    }
+
     /** V1.27.7: Tab Sleep asks this first. True while any app on the phone is playing music or video audio, so a background tab that is playing is never put to sleep. */
     @PluginMethod
     public void musicActive(final PluginCall call) {
@@ -682,6 +740,8 @@ public class FBWebPlugin extends Plugin {
         holder.setBackgroundColor(Color.WHITE); // V1.21.7: was #0c0809 (near-black); that dark holder flashed behind the page every
         // time the native view hid and reshowed (address-bar suggestions open/close on every keystroke, tab switches). White matches
         // the page canvas colour set below, so a hide/show cycle shows no colour change at all instead of a dark flash.
+        // V1.27.9: the watermark is the holder's first child; every page view is added after it, so it stays behind them.
+        try { holder.addView(new MarkView(getContext()), new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)); } catch (Throwable ignored) { }
         parent.addView(holder, new ViewGroup.LayoutParams(1, 1));
     }
 
@@ -1192,7 +1252,10 @@ public class FBWebPlugin extends Plugin {
         priv.put(id, isPriv);
         strictOf.put(id, Boolean.valueOf(strict)); // V1.22.2
         w.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        w.setBackgroundColor(Color.WHITE); // V1.14.7: pages that set no background must look white like in other browsers, not black
+        // V1.14.7: pages that set no background must look white like in other browsers, not black. V1.27.9: the page view is transparent and the
+        // holder behind it is white with the Bojack watermark (ensureHolder), so a blank page still looks white but shows the mark. Pages that paint
+        // their own background cover it completely.
+        w.setBackgroundColor(Color.TRANSPARENT);
         // V1.14.2: let Android's autofill service (Google, Bitwarden, ...) fill logins in normal tabs, never in burner tabs.
         if (Build.VERSION.SDK_INT >= 26) {
             try { w.setImportantForAutofill(isPriv ? View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS : View.IMPORTANT_FOR_AUTOFILL_YES); } catch (Throwable ignored) { }

@@ -725,12 +725,57 @@ html.vopen body::after{content:"";position:fixed;inset:0;pointer-events:none;z-i
 .fbks .ks-card b{font:900 20px system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 0 12px rgba(255,170,60,.7)}
 .fbks .ks-card small{font:700 11px system-ui,sans-serif;letter-spacing:.3em;color:#ffcf8a}
 .fbks .ks-card i{color:#ffb347;display:grid;place-items:center;filter:drop-shadow(0 0 12px rgba(255,170,60,.8))}
+/* V1.27.9: bottom panel toggle: a quarter-length neon line orbits the open block (same colours as the loading line). */
+@property --fba{syntax:'<angle>';inherits:false;initial-value:0deg}
+#rail .rb.on::before{content:"";position:absolute;top:0;left:0;right:0;bottom:0;height:auto;margin:0;padding:2px;border-radius:inherit;box-sizing:border-box;pointer-events:none;
+ background:conic-gradient(from var(--fba),transparent 0deg,#00e5ff 24deg,#b04dff 50deg,#ff2d95 72deg,#ff8a1f 90deg,transparent 90.6deg,transparent 360deg);
+ -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask-composite:exclude;
+ filter:drop-shadow(0 0 3px rgba(0,229,255,.9));animation:fbOrbit 2.4s linear infinite}
+@keyframes fbOrbit{to{--fba:360deg}}
+/* V1.27.9: tab strip buttons: tab manager (square + cyan count) and share */
+#tabsbtn,#shbtn{flex:none;position:relative;width:32px;height:32px;margin-bottom:3px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:var(--mu);padding:0}
+#tabsbtn:hover,#shbtn:hover{background:var(--s3);color:var(--tx)}
+#tabsbtn b{position:absolute;top:-3px;right:-4px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#00e5ff;color:#001418;font:800 10px/16px system-ui,sans-serif;text-align:center;box-shadow:0 0 8px rgba(0,229,255,.75)}
+/* V1.27.9: full-screen tab manager */
+#tabmgr{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;background:var(--bg);color:var(--tx);padding-top:env(safe-area-inset-top)}
+#tabmgr.on{display:flex}
+#tabmgr .tmh{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd);background:var(--s1)}
+#tabmgr .tmh b{flex:1;min-width:0;font-size:16px;letter-spacing:.02em}
+#tabmgr .tmh b em{font-style:normal;color:#00e5ff;text-shadow:0 0 8px rgba(0,229,255,.6)}
+#tabmgr .tmg{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px 12px calc(16px + env(safe-area-inset-bottom));align-content:start}
+@media (min-width:700px){#tabmgr .tmg{grid-template-columns:repeat(4,minmax(0,1fr))}}
+#tabmgr .tmc{position:relative;display:flex;flex-direction:column;gap:6px;min-height:96px;padding:10px 10px 8px;border:1px solid var(--bd);border-top:3px solid var(--tc,var(--bd));background:var(--s1);border-radius:14px;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .16s ease,opacity .16s ease,box-shadow .2s}
+#tabmgr .tmc.on{border-color:#00e5ff;border-top-color:var(--tc,#00e5ff);box-shadow:0 0 0 1px #00e5ff,0 0 14px rgba(0,229,255,.35)}
+#tabmgr .tmc.asleep{opacity:.74}
+#tabmgr .tmc .tmr{display:flex;align-items:center;gap:8px}
+#tabmgr .tmc .tmr>span:first-child{display:grid;place-items:center;flex:none}
+#tabmgr .tmc .tmt{flex:1;min-width:0;font-weight:700;font-size:13px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+#tabmgr .tmc small{color:var(--mu);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tabmgr .tmc .tmx{flex:none;width:28px;height:28px;border:0;border-radius:50%;background:var(--s2);color:var(--mu);display:grid;place-items:center;padding:0}
+#tabmgr .tmc .tmx:active{background:rgba(255,61,61,.25);color:#ff4d4d}
+#tabmgr .tmc .tmz{font:800 10px system-ui,sans-serif;letter-spacing:.04em;color:#00e5ff;text-shadow:0 0 6px rgba(0,229,255,.7)}
+#tabmgr .tmc .tmb{font:800 10px system-ui,sans-serif;letter-spacing:.04em;color:#ff8a1f}
+#tabmgr .tme{grid-column:1/-1;text-align:center;color:var(--mu);padding:36px 12px}
+#tabmgr .tmhint{grid-column:1/-1;text-align:center;color:var(--mu);font-size:11px;margin:-2px 0 2px}
+/* V1.27.9: History panel */
+.hpbar{display:flex;gap:8px;margin-bottom:8px}
+.hpbar .in{flex:1;min-width:0}
+.hpsum{margin:0 0 6px;color:var(--mu);font-size:12px}
+.hpi{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--bd)}
+.hpi>span.hf{flex:none;display:grid;place-items:center;width:22px}
+.hpi .hm{flex:1;min-width:0;cursor:pointer}
+.hpi .hm b,.hpi .hm small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hpi .hm small{color:var(--mu)}
+.hpi .ht{flex:none;color:var(--mu);font-size:11px}
+.hpi .hx{flex:none;width:30px;height:30px;border:0;background:none;color:var(--mu);border-radius:50%;display:grid;place-items:center;padding:0}
+.hpi .hx:active{background:rgba(255,61,61,.2);color:#ff4d4d}
+.hpd{padding:14px 6px 4px;font-weight:800;font-size:12px;letter-spacing:.05em;color:var(--mu);text-transform:uppercase}
 </style>
 </head>
 <body>
 <div id="app">
  <header id="top">
-  <div id="tabstrip"><div id="tabs"></div><button id="newtab" title="New tab" aria-label="New tab"></button><button id="closeall" title="Close all tabs" aria-label="Close all tabs"></button></div>
+  <div id="tabstrip"><div id="tabs"></div><button id="tabsbtn" title="All tabs" aria-label="All tabs"></button><button id="newtab" title="New tab" aria-label="New tab"></button><button id="shbtn" title="Share this page" aria-label="Share this page"></button><button id="closeall" title="Close all tabs" aria-label="Close all tabs"></button></div>
   <div id="toolbar">
    <button class="ib" id="bBack" title="Back" aria-label="Back"></button>
    <button class="ib" id="bFwd" title="Forward" aria-label="Forward"></button>
@@ -752,6 +797,7 @@ html.vopen body::after{content:"";position:fixed;inset:0;pointer-events:none;z-i
   <button class="rb" data-p="view"></button>
   <button class="rb" data-p="media"></button>
   <button class="rb" data-p="bm"></button>
+  <button class="rb" data-p="hist"></button>
   <button class="rb" data-p="dl"></button>
   <button class="rb" data-p="col"></button>
   <button class="rb" data-p="vault"></button>
@@ -781,7 +827,7 @@ html.vopen body::after{content:"";position:fixed;inset:0;pointer-events:none;z-i
 </script>
 <script>
 (()=>{'use strict';
-const VERSION='1.27.8';const CONFIG={repo:'philfesters/festers-browser',registerEmail:''};
+const VERSION='1.27.9';const CONFIG={repo:'philfesters/festers-browser',registerEmail:''};
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LS={get(k,d){try{const v=localStorage.getItem('fb:'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('fb:'+k,JSON.stringify(v));mirrorSoon()}catch(e){toast('Storage blocked or full')}if(k==='vault'&&v&&typeof syncKick==='function'){try{syncKick()}catch(e){}}}};
@@ -1016,6 +1062,7 @@ function renderTabs(){
   const gl=t.col&&t.gn&&(ix===0||tabs[ix-1].col!==t.col)?`<em class="tgn" style="color:${t.col}">${esc(t.gn)}</em>`:'';
   return `<div class="tab ${t.id===cur?'on':''} ${t.priv?'burner':''} ${t.col?'hasc':''} ${t.asleep?'asleep':''}" data-id="${t.id}" ${t.col?`style="--tc:${t.col}"`:''}>${gl}${icon}${t.asleep?'<span class="tz" title="Sleeping. Tap to wake.">❄ Zzz</span>':''}<span class="tt">${esc(t.title)}</span><button class="tx" data-x="${t.id}" aria-label="Close tab">${ic('close',14)}</button></div>`;
  }).join('');
+ try{tabBadge()}catch(e){}
 }
 $('#tabs').addEventListener('click',e=>{
  const x=e.target.closest('[data-x]');if(x){e.stopPropagation();closeTab(+x.dataset.x);return}
@@ -1134,7 +1181,7 @@ function syncNative(){
  // V1.21.7: #sugg (address-bar suggestions) used to be in this list, so every keystroke while searching toggled .on/.off on it,
  // which hid and reshowed the whole native page view each time (the flicker). Suggestions only cover the top of the screen, so
  // instead of hiding the page for them, the native view's top edge is pushed down below the open dropdown (see sr below).
- const t=curTab(),over=$('#menu.on,#mbg.on,#drawer.on,#flame,#engDd,.fbfx,#ksheet.on,#fblock');
+ const t=curTab(),over=$('#menu.on,#mbg.on,#drawer.on,#tabmgr.on,#flame,#engDd,.fbfx,#ksheet.on,#fblock');
  let k;
  if(t&&isNat(t)&&!over){
   const r=views.getBoundingClientRect(),fb=$('.nfind,.nfill',t.el),sg=$('#sugg.on'),
@@ -1226,6 +1273,7 @@ window.__fbBack=()=>{
  if($('#sugg.on')){$('#sugg').classList.remove('on');return true}
  const rd=$('#reader');if(rd){rd.remove();return true}
  const dv=$('#dv');if(dv){const x=$('#dvx',dv);if(x)x.click();else dv.remove();return true}
+ if($('#tabmgr.on')){tmHide();return true}
  if($('#drawer.on')){closePanel();return true}
  const t=curTab();
  const fb=t&&$('.nfind',t.el);if(fb){fb.remove();try{FBW().clearFind({id:t.id})}catch(e){}nsSched();return true}
@@ -2029,7 +2077,7 @@ function buildMenu(){
  const extBody=(exts.length||mgOn)?(mgOn?mi('mgrab','dl','Download media',null,!web):'')+exts.map(x=>`<button class="mi" data-ext="${esc(x.id)}" ${web?'':'disabled'}>${ic('puzzle',19)}<span>${esc(x.name)}</span></button>`).join('')+mi('manageext','gear','Manage extensions'):'<p class="mu" style="padding:8px 10px;margin:0">No extensions enabled.</p>'+mi('manageext','gear','Manage extensions');
  $('#menu').innerHTML=profileChip()+'<div class="qrow">'+qb('back','back','Back',!t||(t.pos<=0&&!(isNat(t)&&t.nb)))+qb('fwd','fwd','Forward',!t||(t.pos>=t.hist.length-1&&!(isNat(t)&&t.nf)))+qb('reload','reload','Reload')+qb('home','home','Home')+'</div><div class="qrow">'+qb('bm','bookmark','Bookmarks')+qb('hist','clock','History')+qb('dl','dl','Downloads')+qb('settings','gear','Settings')+'</div><div class="mgrid">'+qb('newtab','plus','New tab')+qb('private','mask','Burner')+qb('addsc','star','Add shortcut',!web)+qb('savepg','dl','Save page',!web)+qb('share','ext','Share',!web)+qb('find','search','Find',!web)+'</div><div class="hr"></div>'+
  grp('page','Page','globe',
-  mi('site','sliders','Site controls',null,!web)+mi('cookies','shield','Cookies',S.cookies==='none'?'Blocked':S.cookies==='third'?'3rd-party blocked':'',!web)+mi('recent','recent','Recent tabs')+mi('closeall','close','Close all tabs',String(tabs.length))+mi('closeoth','close','Close other tabs',null,tabs.length<2)+mi('zoom','zoom','Zoom',t&&t.zoom&&t.zoom!==1?Math.round(t.zoom*100)+'%':'',!web)+
+  mi('site','sliders','Site controls',null,!web)+mi('cookies','shield','Cookies',S.cookies==='none'?'Blocked':S.cookies==='third'?'3rd-party blocked':'',!web)+mi('tabmgr','tabsq','All tabs',String(tabs.length))+mi('recent','recent','Recent tabs')+mi('closeall','close','Close all tabs',String(tabs.length))+mi('closeoth','close','Close other tabs',null,tabs.length<2)+mi('zoom','zoom','Zoom',t&&t.zoom&&t.zoom!==1?Math.round(t.zoom*100)+'%':'',!web)+
   mi('find','search','Find in page',null,!web)+mi('fill','key','Fill login from vault',null,!web)+mi('translate','translate','Translate…',null,!web)+mi('reader','reader','Show reading mode',null,!web)+(mgOn?mi('mgrab','dl','Download media',null,!web):'')+
   mi('install','install','Install and create shortcut',null,!web)+ck('desktop','desktop','Desktop site',S.desktop,!web)+
   mi('dark','eye','Dark Pages',extOn('darkpage')?'On':'Off')+(S.noscript&&web?mi('nsite','shield','Scripts on this site',scriptAllowed(host(u))?'Allowed':'Blocked'):'')+
@@ -2075,14 +2123,15 @@ function menuAct(a){
  else if(a==='vault')openPanel('vault',true);
  else if(a==='notes')openPanel('notes',true);
  else if(a==='bm')openPanel('bm',true);
- else if(a==='hist')openInternal('about:history');
+ else if(a==='hist')openPanel('hist',true);
  else if(a==='dark'){const s=extState();s.darkpage=!extOn('darkpage');LS.set('ext',s);applyPrefs();toast('Dark Pages '+(s.darkpage?'on':'off'))}
  else if(a==='external'){if(isWeb(u))openExternal(u);else toast('Nothing to open')}
  else if(a==='copyurl'){if(isWeb(u))copyText(u);else toast('Nothing to copy')}
  else if(a==='addsc'){if(isWeb(u)){if(SC.some(s=>s.u===u))return toast('Already a shortcut');SC.push({t:host(u),u});LS.set('shortcuts',SC);toast('Added to start page shortcuts')}}
  else if(a==='addcol')addToCollection();
  else if(a==='savepg'){if(isWeb(u)){toast('Saving page…');savePage(u).then(r=>toast('Saved offline: '+r.title.slice(0,30))).catch(e=>toast('Could not save: '+e.message))}}
- else if(a==='share'){if(isWeb(u)){if(navigator.share)navigator.share({title:host(u),url:u}).catch(()=>{});else copyText(u)}}
+ else if(a==='share')shareCur();
+ else if(a==='tabmgr')tmShow();
  else if(a==='dl'){openPanel('dl',true)}
  else if(a==='tbpos'){setS('tbPos',S.tbPos==='bottom'?'top':'bottom');toast('Toolbar at the '+S.tbPos)}
  else if(a==='back')$('#bBack').click();
@@ -2113,7 +2162,7 @@ function menuAct(a){
 
 /* ---------- rail ---------- */
 var VW={on:false,eye:S.viewEye!==false,busy:false,tall:false,H:[]};
-const RAIL={dl:['dl','Downloads'],ai:['ai','LLM'],view:['view','View'],vault:['key','Vault'],notes:['note','Notes'],media:['play','Media'],sec:['shield','Security'],bm:['bookmark','Bookmarks'],scorch:['flame','Scorch'],sx:['lock','Secrets'],col:['bookmark','Sets'],settings:['gear','Settings']};
+const RAIL={hist:['clock','History'],dl:['dl','Downloads'],ai:['ai','LLM'],view:['view','View'],vault:['key','Vault'],notes:['note','Notes'],media:['play','Media'],sec:['shield','Security'],bm:['bookmark','Bookmarks'],scorch:['flame','Scorch'],sx:['lock','Secrets'],col:['bookmark','Sets'],settings:['gear','Settings']};
 $$('#rail .rb').forEach(b=>{const r=RAIL[b.dataset.p];b.innerHTML=ic(r[0],22)+'<span>'+r[1]+'</span>'});
 $('#rail').addEventListener('click',e=>{
  const b=e.target.closest('.rb');if(!b)return;const p=b.dataset.p;
@@ -2121,6 +2170,7 @@ $('#rail').addEventListener('click',e=>{
  else if(p==='ai'||p==='media'||p==='sec'||p==='sx'||p==='col'||p==='dl')openPanel(p);
  else if(p==='vault'||p==='notes')openPanel(p);
  else if(p==='bm')openPanel('bm');
+ else if(p==='hist')openPanel('hist');
  else if(p==='scorch')scorchDialog();
  else if(p==='settings')openInternal('about:preferences');
 });
@@ -2287,11 +2337,11 @@ function openPanel(name,force){if(name==='sec'){if(panel)closePanel();openConsol
  if(panel===name&&!force){closePanel();return}if(name==='vault')V.bioAsked=false;panel=name;drawer.className='on';renderDrawer();railSync()}
 function closePanel(){panel=null;drawer.className='';stopTick();railSync()}
 function renderDrawer(){
- const titles={vault:['key','Passwords'],notes:['note','Notepad'],ai:['ai','LLM'],tb:['tools','Toolbox'],media:['play','Media'],sec:['shield','Security Console'],dl:['dl','Downloads'],sx:['lock','Secrets'],col:['bookmark','Collections'],bm:['bookmark','Bookmarks']};const tt=titles[panel];
+ const titles={vault:['key','Passwords'],notes:['note','Notepad'],ai:['ai','LLM'],tb:['tools','Toolbox'],media:['play','Media'],sec:['shield','Security Console'],dl:['dl','Downloads'],sx:['lock','Secrets'],col:['bookmark','Collections'],bm:['bookmark','Bookmarks'],hist:['clock','History']};const tt=titles[panel];
  drawer.innerHTML=`<div class="dh"><b>${ic(tt[0],19)} ${tt[1]}</b><button class="ib" id="dclose" aria-label="Close panel">${ic('close',18)}</button></div><div class="db" id="dbody"></div>`;
  $('#dclose').onclick=closePanel;
  stopTick();
- ({vault:renderVault,notes:renderNotes,ai:renderAI,tb:renderTb,media:renderMedia,sec:renderSec,dl:renderDl,sx:renderSx,col:renderCol,bm:renderBmPanel})[panel]();
+ ({vault:renderVault,notes:renderNotes,ai:renderAI,tb:renderTb,media:renderMedia,sec:renderSec,dl:renderDl,sx:renderSx,col:renderCol,bm:renderBmPanel,hist:renderHistPanel})[panel]();
 }
 drawer.addEventListener('pointerdown',()=>{if(panel==='vault')V.last=Date.now()});
 drawer.addEventListener('keydown',()=>{if(panel==='vault')V.last=Date.now()});
@@ -5376,6 +5426,8 @@ function placeMenu(){const m=$('#menu');if(S.tbPos==='bottom'&&S.topbar!=='hidde
 /* ===================== V1.23.8 ===================== */
 /* S.O.I. x Bojack Security: Kill Switch, Scorch, Burn, Blaze, bookmark groups, tab colour groups, privacy sheet, neon loader, vault glow, tracker badge. */
 Object.assign(ICONS,{
+ share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/>',
+ tabsq:'<rect x="4" y="4" width="16" height="16" rx="3.5"/>',
  killsw:'<path d="M12 3v8"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/>',
  burner:'<ellipse cx="5.2" cy="12.4" rx="1.7" ry="2.2" transform="rotate(-22 5.2 12.4)"/><ellipse cx="9.3" cy="7.7" rx="1.7" ry="2.2" transform="rotate(-8 9.3 7.7)"/><ellipse cx="14.7" cy="7.7" rx="1.7" ry="2.2" transform="rotate(8 14.7 7.7)"/><ellipse cx="18.8" cy="12.4" rx="1.7" ry="2.2" transform="rotate(22 18.8 12.4)"/><path d="M12 12.8c-3 0-5.1 3-5.1 4.9 0 1.7 1.8 2.6 5.1 1.6 3.3 1 5.1.1 5.1-1.6 0-1.9-2.1-4.9-5.1-4.9z"/><path fill="currentColor" stroke-width="1" d="M3.7 10.6Q2.6 9.4 2.3 7.6Q4.4 8.3 5.3 10.1Z"/><path fill="currentColor" stroke-width="1" d="M8 5.7Q7.3 4.2 7.6 2.5Q9.3 3.5 9.7 5.5Z"/><path fill="currentColor" stroke-width="1" d="M16 5.7Q16.7 4.2 16.4 2.5Q14.7 3.5 14.3 5.5Z"/><path fill="currentColor" stroke-width="1" d="M20.3 10.6Q21.4 9.4 21.7 7.6Q19.6 8.3 18.7 10.1Z"/>',
  bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
@@ -5679,6 +5731,104 @@ function fbLoad(on){ /* V1.27.6: in the installed app the loading line is a glow
  const paw=document.createElement('span');paw.id='fbpaw';paw.setAttribute('aria-hidden','true');paw.innerHTML=ic('paw',16);
  const st=$('#bStar');if(st&&st.parentNode)st.parentNode.insertBefore(paw,st);
  const sp=document.createElement('button');sp.type='button';sp.id='fbstop';sp.title='Stop';sp.setAttribute('aria-label','Stop loading');sp.innerHTML=ic('close',16);sp.onclick=e=>{e.preventDefault();e.stopPropagation();try{stopLoad()}catch(_){}};if(st&&st.parentNode)st.parentNode.insertBefore(sp,st);
+})();
+
+/* ---------- V1.27.9: History panel, tab manager, Share ---------- */
+const HP={q:'',n:200};
+function histDayLabel(t){const d=new Date(t),n=new Date(),a=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),b=new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime(),k=Math.round((b-a)/864e5);return k===0?'Today':k===1?'Yesterday':d.toDateString()}
+function renderHistPanel(){
+ const el=$('#dbody');if(!el)return;
+ el.innerHTML=`<div class="hpbar"><input class="in" id="hpq" placeholder="Search history" value="${esc(HP.q)}" autocapitalize="off" autocomplete="off" aria-label="Search history"><button class="btn bad sm" id="hpclr">Clear all</button></div><p class="hpsum" id="hps"></p><div id="hpl"></div>`;
+ const draw=()=>{
+  const q=HP.q.trim().toLowerCase(),all=H.filter(h=>h&&h.url&&(!q||((h.url||'')+' '+(h.title||'')).toLowerCase().includes(q))),list=all.slice(0,HP.n);
+  let day='',html='';
+  list.forEach(h=>{const dl=histDayLabel(h.t);if(dl!==day){day=dl;html+=`<div class="hpd">${esc(dl)}</div>`}
+   let tm='';try{tm=new Date(h.t).toTimeString().slice(0,5)}catch(e){}
+   html+=`<div class="hpi"><span class="hf">${isWeb(h.url)?favImg(h.url):mascot(18)}</span><div class="hm" data-hg="${esc(h.url)}"><b>${esc(h.title||h.url)}</b><small>${esc(h.url)}</small></div><span class="ht">${tm}</span><button class="hx" data-hd="${esc(String(h.t))}" aria-label="Remove from history">${ic('close',15)}</button></div>`});
+  if(all.length>list.length)html+=`<div class="acts" style="margin:12px 0"><button class="btn sm" id="hpmore">Show more (${all.length-list.length} left)</button></div>`;
+  $('#hpl',el).innerHTML=html||`<p class="mu" style="text-align:center;padding:28px 8px">${q?'No matches.':'Nothing here yet. Pages you visit show up here.'}</p>`;
+  $('#hps',el).textContent=H.length?`${all.length} of ${H.length} ${H.length===1?'page':'pages'}`:'';
+ };
+ draw();
+ $('#hpq',el).oninput=e=>{HP.q=e.target.value;HP.n=200;draw()};
+ $('#hpclr',el).onclick=async()=>{if(!H.length)return toast('History is already empty');if(await confirmBox('Delete all browsing history?','Delete')){H=[];LS.set('history',H);draw()}};
+ el.onclick=e=>{
+  const m=e.target.closest('#hpmore');if(m){HP.n+=200;draw();return}
+  const d=e.target.closest('[data-hd]');if(d){const k=d.dataset.hd;H=H.filter(h=>String(h.t)!==k);LS.set('history',H);draw();return}
+  const g=e.target.closest('[data-hg]');if(g){const u=g.dataset.hg;closePanel();try{nav(curTab(),u,{user:true})}catch(er){newTab(u)}}
+ };
+}
+function tabBadge(){
+ const n=tabs.length,txt=n>99?'99+':String(n),b=$('#tabsbtn b');
+ if(b&&b.textContent!==txt)b.textContent=txt;
+ const t=$('#tmt');if(t&&$('#tabmgr.on'))t.innerHTML=`<em>${n}</em> open ${n===1?'tab':'tabs'}`;
+}
+function tmRender(){
+ const g=$('#tmg');if(!g)return;
+ if(!tabs.length){g.innerHTML='<div class="tme">No tabs open.</div>';tabBadge();return}
+ g.innerHTML='<div class="tmhint">Tap to open · swipe a card sideways to close it</div>'+tabs.map(t=>{
+  const u=t.hist[t.pos]||'',web=isWeb(u);
+  const icon=t.priv?ic('burner',18):web?favImg(u):mascot(20);
+  const sub=t.priv?'<span class="tmb">BURNER WINDOW</span>':t.asleep?'<span class="tmz">❄ Zzz</span> <small>sleeping · tap to wake</small>':`<small>${esc(web?host(u):(u==='about:newtab'?'Start page':u))}</small>`;
+  const gn=t.col&&t.gn?`<small style="color:${t.col};font-weight:800">${esc(t.gn)}</small>`:'';
+  return `<div class="tmc ${t.id===cur?'on':''} ${t.asleep?'asleep':''}" data-id="${t.id}" ${t.col?`style="--tc:${t.col}"`:''}><div class="tmr"><span>${icon}</span><span class="tmt">${esc(t.title||u||'New tab')}</span><button class="tmx" data-tx="${t.id}" aria-label="Close tab">${ic('close',14)}</button></div>${sub}${gn}</div>`;
+ }).join('');
+ tabBadge();
+}
+function tmClose(id){
+ try{closeTab(id)}catch(e){}
+ if($('#tabmgr.on')){tmRender();try{syncNative()}catch(e){}}
+}
+function tmHide(){const m=$('#tabmgr');if(m)m.classList.remove('on');try{nsSched()}catch(e){}try{syncNative()}catch(e){}}
+function tmShow(){
+ let m=$('#tabmgr');
+ if(!m){
+  m=document.createElement('div');m.id='tabmgr';m.setAttribute('role','dialog');m.setAttribute('aria-label','Open tabs');
+  m.innerHTML=`<div class="tmh"><b id="tmt"></b><button class="btn sm pri" id="tmnew">${ic('plus',15)} New tab</button><button class="btn sm bad" id="tmall">Close all</button><button class="ib" id="tmx" aria-label="Close tab manager">${ic('close',18)}</button></div><div class="tmg" id="tmg"></div>`;
+  document.body.appendChild(m);
+  $('#tmx',m).onclick=tmHide;
+  $('#tmnew',m).onclick=()=>{tmHide();newTab('about:newtab')};
+  $('#tmall',m).onclick=async()=>{const n=tabs.length;if(!n)return;if(!await confirmBox('Close all '+n+' tab'+(n===1?'':'s')+'? You can bring some back from Recent tabs.','Close all'))return;try{closeAllTabs()}catch(e){}tmHide()};
+  const g=$('#tmg',m);let drag=null,swiped=0;
+  g.addEventListener('pointerdown',e=>{const c=e.target.closest('.tmc');if(!c||e.target.closest('[data-tx]'))return;drag={c,x:e.clientX,y:e.clientY,dx:0,on:false}});
+  g.addEventListener('pointermove',e=>{
+   if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+   if(!drag.on){if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)*1.4){drag.on=true;try{drag.c.setPointerCapture(e.pointerId)}catch(er){}}else if(Math.abs(dy)>10){drag=null;return}}
+   if(drag.on){drag.dx=dx;drag.c.style.transition='none';drag.c.style.transform=`translateX(${dx}px)`;drag.c.style.opacity=String(Math.max(.25,1-Math.abs(dx)/260))}
+  });
+  const end=()=>{
+   if(!drag)return;const d=drag;drag=null;
+   if(!d.on)return;
+   swiped=1;setTimeout(()=>{swiped=0},80);
+   d.c.style.transition='';
+   if(Math.abs(d.dx)>110){d.c.style.transform=`translateX(${d.dx>0?600:-600}px)`;d.c.style.opacity='0';const id=+d.c.dataset.id;setTimeout(()=>tmClose(id),170)}
+   else{d.c.style.transform='';d.c.style.opacity=''}
+  };
+  g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end);
+  g.addEventListener('click',e=>{
+   if(swiped)return;
+   const x=e.target.closest('[data-tx]');if(x){tmClose(+x.dataset.tx);return}
+   const c=e.target.closest('.tmc');if(c){const id=+c.dataset.id;tmHide();switchTab(id)}
+  });
+ }
+ try{closePanel()}catch(e){}
+ try{$('#menu').classList.remove('on')}catch(e){}
+ tmRender();m.classList.add('on');tabBadge();
+ try{syncNative()}catch(e){}
+}
+function fbShareFallback(title,u){try{if(navigator.share){navigator.share({title,url:u}).catch(()=>{});return}}catch(e){}try{copyText(u);toast('Link copied')}catch(e){toast('Could not share')}}
+function shareCur(){
+ const t=curTab(),u=t&&t.hist[t.pos];
+ if(!u||!isWeb(u)){toast('Open a web page to share it');return}
+ const title=String((t.title&&t.title!==u?t.title:host(u))||u).slice(0,140);
+ try{const s=FSYS();if(s&&s.shareText){s.shareText({title,url:u}).catch(()=>fbShareFallback(title,u));return}}catch(e){}
+ fbShareFallback(title,u);
+}
+(()=>{
+ const tb=$('#tabsbtn'),sb=$('#shbtn');
+ if(tb){tb.innerHTML=ic('tabsq',19)+'<b>1</b>';tb.onclick=e=>{e.stopPropagation();tmShow()}}
+ if(sb){sb.innerHTML=ic('share',18);sb.onclick=e=>{e.stopPropagation();shareCur()}}
+ tabBadge();
 })();
 
 /* ---------- vault unlocked: purple glow around the whole app ---------- */
