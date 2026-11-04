@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- V1.23.0: Festers trusts the phone's built-in certificate authorities AND any certificate authority you install yourself
+     (Settings > Security > Encryption & credentials > Install a certificate). That is how a government or company root that Android does
+     not ship gets trusted. Plain http is allowed so HTTPS-only can fall back for sites that have no HTTPS at all. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

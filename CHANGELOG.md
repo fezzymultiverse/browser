@@ -1,3 +1,39 @@
+## V1.27.6
+- Loading line: while a page loads, two glowing multicolour lines (cyan, purple, pink, orange, bright head and fading tail) now run round the edge of the phone, one opposite the other. Only the border is drawn, never the whole screen, and touches go straight through. Native overlay (FBWebPlugin.edgeLine). It stops when the page finishes, when you press Stop, and after 45 s at most.
+- Settings > General: "Edge loading line" switch (on by default; off, or Reduce motion on, uses the old top line).
+- Not compiled, not run on a device.
+## V1.27.5
+- Fill login, Fill code and Save password bars redesigned: a card with a glowing accent icon, a clear title and the site/user underneath, pill buttons (Fill, Copy, Save, Never) and a round close button. Slides in from the top (no motion with Reduce motion).
+- The Android passkey sheet itself (Conduint, Bitwarden, Google Password Manager) is drawn by Android and cannot be restyled from the browser.
+- Not compiled, not run on a device.
+## V1.27.4
+- Start page (dashboard) search box now reads "SEARCH FESTERS BROWSER HERE".
+- Not compiled, not run on a device.
+## V1.27.3
+- Faster page start: every first visit to a site waited for the online threat check (up to 1.6 s) before the page began to load. The page now starts at once and the check runs beside it; a flagged site is blocked as soon as the answer comes. Sites on the local block list or flagged earlier are still stopped before loading.
+- Faster start-up: with "Restore previous tabs", only the tab you were on loads. The others load when you tap them (before, all of them loaded at once).
+- Faster typing in the address bar: suggestions wait 70 ms after the last key and no longer copy your whole history on each key.
+- Fewer disk writes: the saved session is written 0.5 s after the last change and when the app goes to the background, not on every page event.
+- New menu items under Page: "Close all tabs" (asks first, tabs go to Recent tabs) and "Close other tabs".
+- Not compiled, not run on a device.
+## V1.27.2
+- New bottom-bar button "View" (atom-chip icon) next to LLM. Tap it and a box pops up at the bottom of the page; the page stays visible above it. Ask about the site or ask for advice; the AI reads the text of the page on screen (title, address, visible text, anything you selected) through the new native readPage. Buttons: Summarize, Is it safe?, Advice, Key facts.
+- Eye in the box header: open = the AI can read the page (read fresh for every question); closed (red) = the page is blocked, nothing from it is sent. The choice is remembered.
+- Uses your Groq and Gemini keys like the LLM panel (long pages go to Gemini in Auto). Personal-detail hiding applies when it is on. Not compiled, not run on a device.
+## V1.27.1
+- Long-press panel: images now have Download image and Save image as…; links have Download link and Save link as… (Save as downloads into the browser first, then opens the system Save as window when the copy is done).
+- Stop button: while a page is loading the reload button turns into a Stop (X) button, also on phone width where reload was hidden. Stop ends the load right away and clears the loading bar.
+- Loading freeze: page progress ticks no longer redraw the tab strip and save the session every time; they only move the loading bar. Native progress events are also limited to about 5 per second.
+- Desktop site: the page now gets a 1280 px wide layout (viewport forced, also when the page sets its own), navigator.platform reads Linux x86_64, and the browser hints say Linux, not mobile, instead of Android. Toggle reloads the page.
+- Not compiled, not run on a device.
+## V1.27.0
+- Downloads: a finished download is kept in the browser's own storage first. Nothing is written to the phone's Downloads on its own any more, so Open can never say the file is missing. Each finished download has Save to Downloads (copy into the phone's Downloads) and Save as (pick any place). Page-made downloads (blob: and data: links, saved images) are in the same list now.
+- Remove, Clear finished, Kill Switch and Blaze delete the browser copy. Remove asks first when the file was never saved to Downloads.
+- Tapping the download notification opens the browser copy. Downloads made before this version keep working as they were.
+- Not compiled, not run on a device.
+## V1.26.1
+- Hotfix: home page and Settings were blank. lkEnabled, LKC, lkBio and lkLocked were declared with const/let after the new-tab page was first drawn at start-up (ReferenceError stopped the whole script). They are now hoisted function/var declarations. Not run on a device.
+
 ## V1.26.0
 - Long-press a link: a small popup with the address and two buttons, Copy Link and Open in New Tab (Background tab and Download link are small buttons under them). Images keep their longer menu. Tested: page script syntax only; not run on a device.
 - URL bar ("Laser Focus"): tap it to type and the accent border glows brighter and pulses slowly; Reduce motion turns the pulse off. CSS only.
@@ -517,3 +553,4 @@
 
 ## 1.0.0
 - Tabs, private tabs, bangs, bookmarks, history, encrypted vault with TOTP, notepad, extensions.
+
