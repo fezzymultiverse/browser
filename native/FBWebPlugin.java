@@ -327,6 +327,9 @@ public class FBWebPlugin extends Plugin {
 
     private ActivityResultLauncher<Intent> chooserLauncher;
     private ValueCallback<Uri[]> chooserCallback;
+    private ActivityResultLauncher<Intent> saveAsLauncher; // V1.27.0: Save as (system file picker)
+    private PluginCall saveAsCall;
+    private long saveAsId = -1L;
 
     private ConnectivityManager.NetworkCallback vpnCb;
     private View customView;
@@ -363,6 +366,29 @@ public class FBWebPlugin extends Plugin {
                     chooserCallback = null;
                 });
         } catch (Throwable ignored) { chooserLauncher = null; }
+        try { // V1.27.0: result of the Save as picker
+            saveAsLauncher = getActivity().registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(), result -> {
+                    final PluginCall c = saveAsCall;
+                    final long sid = saveAsId;
+                    saveAsCall = null;
+                    saveAsId = -1L;
+                    if (c == null) return;
+                    Intent data = result.getData();
+                    Uri dest = data == null ? null : data.getData();
+                    if (result.getResultCode() != android.app.Activity.RESULT_OK || dest == null) {
+                        JSObject r = new JSObject();
+                        r.put("ok", false); r.put("cancelled", true); r.put("desc", "Save as was cancelled");
+                        c.resolve(r);
+                        return;
+                    }
+                    FBDownloader.get(getContext()).copyKeptTo(sid, dest, (err, info) -> {
+                        JSObject r = new JSObject();
+                        if (err == null) { r.put("ok", true); r.put("info", info); } else { r.put("ok", false); r.put("desc", err); }
+                        c.resolve(r);
+                    });
+                });
+        } catch (Throwable ignored) { saveAsLauncher = null; }
         try {
             ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkRequest rq = new NetworkRequest.Builder()
@@ -467,6 +493,125 @@ public class FBWebPlugin extends Plugin {
     }
 
     private void ui(Runnable r) { getActivity().runOnUiThread(r); }
+
+    /** V1.27.6: loading line that patrols the edge of the screen: two glowing multicolour comets running round the border. Touches pass straight through. */
+    private static final class EdgeView extends View {
+        private static final int[] COL = { 0xFF00E5FF, 0xFFB04DFF, 0xFFFF2D95, 0xFFFF8A1F };
+        private static final int N = 16;
+        private final Paint core = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path track = new Path();
+        private final Path seg = new Path();
+        private final PathMeasure pm = new PathMeasure();
+        private final android.animation.ArgbEvaluator ev = new android.animation.ArgbEvaluator();
+        private final float dn;
+        private float len = 0f;
+        private float phase = 0f;
+        private android.animation.ValueAnimator anim;
+        private final Runnable autoStop = new Runnable() { @Override public void run() { halt(); } };
+
+        EdgeView(Context c) {
+            super(c);
+            dn = c.getResources().getDisplayMetrics().density;
+            setClickable(false);
+            setFocusable(false);
+            setVisibility(View.GONE);
+            core.setStyle(Paint.Style.STROKE); core.setStrokeCap(Paint.Cap.ROUND); core.setStrokeWidth(3f * dn);
+            glow.setStyle(Paint.Style.STROKE); glow.setStrokeCap(Paint.Cap.ROUND); glow.setStrokeWidth(9f * dn);
+        }
+
+        @Override protected void onSizeChanged(int w, int h, int ow, int oh) {
+            track.rewind();
+            float in = 2f * dn;
+            float r = Math.min(30f * dn, Math.min(w, h) / 4f);
+            track.addRoundRect(new RectF(in, in, w - in, h - in), r, r, Path.Direction.CW);
+            pm.setPath(track, true);
+            len = pm.getLength();
+        }
+
+        private int colorAt(float f) {
+            f = f - (float) Math.floor(f);
+            float x = f * COL.length;
+            int i = (int) x;
+            float t = x - i;
+            return (Integer) ev.evaluate(t, COL[i % COL.length], COL[(i + 1) % COL.length]);
+        }
+
+        private void drawSeg(Canvas c, float a, float d) {
+            a = ((a % len) + len) % len;
+            float e = a + d;
+            seg.rewind();
+            if (e <= len) {
+                pm.getSegment(a, e, seg, true);
+            } else {
+                pm.getSegment(a, len, seg, true);
+                pm.getSegment(0f, e - len, seg, true);
+            }
+            c.drawPath(seg, glow);
+            c.drawPath(seg, core);
+        }
+
+        @Override protected void onDraw(Canvas c) {
+            if (len <= 0f) return;
+            float comet = len * 0.2f;
+            float cl = comet / N;
+            for (int line = 0; line < 2; line++) {
+                float head = ((phase + line * 0.5f) % 1f) * len;
+                for (int i = 0; i < N; i++) {
+                    float a = head - comet + i * cl;
+                    float al = (i + 1f) / N;
+                    int col = colorAt(phase * 2f + line * 0.5f + (i / (float) N) * 0.35f);
+                    glow.setColor(col); glow.setAlpha((int) (80 * al));
+                    core.setColor(col); core.setAlpha((int) (255 * al));
+                    drawSeg(c, a, cl * 1.2f);
+                }
+            }
+        }
+
+        void go() {
+            removeCallbacks(autoStop);
+            postDelayed(autoStop, 45000L); // a page that never finishes must not leave the line running
+            setVisibility(View.VISIBLE);
+            if (anim == null) {
+                anim = android.animation.ValueAnimator.ofFloat(0f, 1f);
+                anim.setDuration(2600L);
+                anim.setInterpolator(new android.view.animation.LinearInterpolator());
+                anim.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+                anim.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener() {
+                    @Override public void onAnimationUpdate(android.animation.ValueAnimator va) {
+                        phase = (Float) va.getAnimatedValue();
+                        invalidate();
+                    }
+                });
+            }
+            if (!anim.isStarted()) anim.start();
+        }
+
+        void halt() {
+            removeCallbacks(autoStop);
+            if (anim != null) anim.cancel();
+            setVisibility(View.GONE);
+        }
+    }
+
+    private EdgeView edgeView;
+
+    @PluginMethod
+    public void edgeLine(final PluginCall call) {
+        final boolean on = call.getBoolean("on", false);
+        ui(() -> {
+            try {
+                if (edgeView == null) {
+                    if (!on) { call.resolve(); return; }
+                    ViewGroup decor = (ViewGroup) getActivity().getWindow().getDecorView();
+                    edgeView = new EdgeView(getContext());
+                    decor.addView(edgeView, new FrameLayout.LayoutParams(-1, -1));
+                }
+                if (on) { edgeView.bringToFront(); edgeView.go(); } else edgeView.halt();
+            } catch (Throwable ignored) { }
+            call.resolve();
+        });
+    }
 
     private void ensureHolder() {
         if (holder != null) return;
@@ -747,8 +892,8 @@ public class FBWebPlugin extends Plugin {
                 String ex = MimeTypeMap.getSingleton().getExtensionFromMimeType(mt);
                 if (ex != null) name = name + "." + ex;
             }
-            saveBytes(name, mt, bytes);
-            o.put("ok", true); o.put("name", name);
+            FBDownloader.get(getContext()).addLocal(name, mt, bytes); // V1.27.0: same list as every other download
+            o.put("ok", true); o.put("done", true); o.put("name", name);
         } catch (Throwable e) {
             o.put("ok", false); o.put("desc", "Could not save: " + e.getMessage());
         }
@@ -995,6 +1140,7 @@ public class FBWebPlugin extends Plugin {
         enablePasskeys(w);
         hideRequestedWith(w);
         stealthScript(w); // V1.21.5
+        deskScript(w); // V1.27.1
         chromeHints(w); // V1.16.1
         hintState.put(w, Boolean.valueOf("chrome".equals(hintsPref)));
         if (!isPriv) w.addJavascriptInterface(new CredBridge(id, w), "FBCred"); // V1.15.0: save-password bar, never in burner tabs
@@ -1033,6 +1179,7 @@ public class FBWebPlugin extends Plugin {
         cm.setAcceptCookie(!"none".equals(cookieMode));
         cm.setAcceptThirdPartyCookies(w, thirdOk(isPriv, strict));
         applySettings(w, id, js, zoom, desk);
+        if (desk) chromeHints(w); // V1.27.1: hints after the desktop UA is set
         desktop.put(id, desk);
 
         w.setWebViewClient(new WebViewClient() {
@@ -1099,7 +1246,13 @@ public class FBWebPlugin extends Plugin {
             }
 
             @Override
+            public void onPageCommitVisible(WebView v, String url) {
+                try { v.evaluateJavascript(DESK_JS, null); } catch (Throwable ignored) { } // V1.27.1
+            }
+
+            @Override
             public void onPageFinished(WebView v, String url) {
+                try { v.evaluateJavascript(DESK_JS, null); } catch (Throwable ignored) { } // V1.27.1
                 shieldEmit(id);
                 if (url != null && url.startsWith("http")) netRetry.remove(id); // V1.22.2
                 try { CookieManager.getInstance().flush(); } catch (Throwable ignored) { } // V1.21.5
@@ -1229,7 +1382,11 @@ public class FBWebPlugin extends Plugin {
         });
 
         w.setWebChromeClient(new WebChromeClient() {
+            private long lastProg = 0L; // V1.27.1: progress ticks were flooding the page script and freezing the UI
             @Override public void onProgressChanged(WebView v, int p) {
+                long now = android.os.SystemClock.uptimeMillis();
+                if (p < 100 && p > 10 && now - lastProg < 180L) return;
+                lastProg = now;
                 JSObject o = state(v, id); o.put("progress", p); o.put("loading", p < 100); emit("page", o);
             }
             @Override public void onReceivedTitle(WebView v, String t) { emit("page", state(v, id)); }
@@ -1320,8 +1477,8 @@ public class FBWebPlugin extends Plugin {
                             byte[] bytes = b64 ? Base64.decode(payload, Base64.DEFAULT) : Uri.decode(payload).getBytes(StandardCharsets.UTF_8);
                             String name = cleanName(URLUtil.guessFileName(durl.length() > 200 ? "data" : durl, cd, mt));
                             if (name.isEmpty()) name = "festers-" + System.currentTimeMillis();
-                            saveBytes(name, mt, bytes);
-                            r.put("id", id); r.put("ok", true); r.put("name", name);
+                            FBDownloader.get(getContext()).addLocal(name, mt, bytes); // V1.27.0: same list as every other download
+                            r.put("id", id); r.put("ok", true); r.put("done", true); r.put("name", name);
                         } catch (Throwable e) {
                             r.put("id", id); r.put("ok", false); r.put("name", ""); r.put("desc", "Download could not start.");
                         }
@@ -1565,9 +1722,56 @@ public class FBWebPlugin extends Plugin {
         ui(() -> { WebView w = views.get(call.getInt("id", -1)); if (w != null) w.reload(); call.resolve(); });
     }
 
+    /** V1.27.2: the View box. Reads the text of the page that is on screen (title, address, selection, visible text) so the AI can answer about it. */
+    private static final String READ_JS =
+        "(function(){try{var d=document,b=d.body;if(!b)return JSON.stringify({err:'empty'});"
+        + "var sel='';try{sel=String(window.getSelection?window.getSelection():'').slice(0,4000)}catch(e){}"
+        + "var r=d.querySelector('article,main,[role=main]');var t=r?(r.innerText||''):'';"
+        + "if(t.length<400)t=b.innerText||t;"
+        + "t=t.replace(/[ \\t\\u00a0]+/g,' ').replace(/\\n[ ]+/g,'\\n').replace(/\\n{3,}/g,'\\n\\n').trim();"
+        + "return JSON.stringify({title:d.title||'',url:location.href,text:t.slice(0,__MAX__),sel:sel,len:t.length})"
+        + "}catch(e){return JSON.stringify({err:String(e)})}})();";
+
+    @PluginMethod
+    public void readPage(final PluginCall call) {
+        final int rid = call.getInt("id", -1);
+        final int max = Math.max(1000, Math.min(200000, call.getInt("max", 12000)));
+        ui(() -> {
+            JSObject r = new JSObject();
+            WebView w = views.get(rid);
+            if (w == null) { r.put("ok", false); r.put("desc", "No page view"); call.resolve(r); return; }
+            try {
+                w.evaluateJavascript(READ_JS.replace("__MAX__", String.valueOf(max)), value -> {
+                    JSObject o = new JSObject();
+                    try {
+                        Object v = new org.json.JSONTokener(value == null ? "null" : value).nextValue();
+                        if (!(v instanceof String)) { o.put("ok", false); o.put("desc", "Could not read this page. Scripts may be blocked."); call.resolve(o); return; }
+                        org.json.JSONObject j = new org.json.JSONObject((String) v);
+                        if (j.has("err")) { o.put("ok", false); o.put("desc", "Could not read this page"); call.resolve(o); return; }
+                        o.put("ok", true);
+                        o.put("title", j.optString("title", ""));
+                        o.put("url", j.optString("url", ""));
+                        o.put("text", j.optString("text", ""));
+                        o.put("sel", j.optString("sel", ""));
+                        o.put("len", j.optInt("len", 0));
+                    } catch (Throwable e) { o.put("ok", false); o.put("desc", "Could not read this page"); }
+                    call.resolve(o);
+                });
+            } catch (Throwable e) { r.put("ok", false); r.put("desc", "Could not read this page"); call.resolve(r); }
+        });
+    }
+
     @PluginMethod
     public void stop(final PluginCall call) {
-        ui(() -> { WebView w = views.get(call.getInt("id", -1)); if (w != null) w.stopLoading(); call.resolve(); });
+        ui(() -> {
+            int sid = call.getInt("id", -1);
+            WebView w = views.get(sid);
+            if (w != null) {
+                w.stopLoading();
+                JSObject o = state(w, sid); o.put("progress", 100); o.put("loading", false); emit("page", o); // V1.27.1: tell the page it stopped
+            }
+            call.resolve();
+        });
     }
 
     @PluginMethod
@@ -1583,7 +1787,7 @@ public class FBWebPlugin extends Plugin {
             desktop.put(id, desk);
             httpsOnly.put(id, call.getBoolean("httpsOnly", Boolean.TRUE.equals(httpsOnly.get(id))));
             shieldOn.put(id, call.getBoolean("shield", !Boolean.FALSE.equals(shieldOn.get(id))));
-            if (changed) w.reload();
+            if (changed) { chromeHints(w); w.reload(); } // V1.27.1
             call.resolve();
         });
     }
@@ -1842,6 +2046,40 @@ public class FBWebPlugin extends Plugin {
         call.resolve(r);
     }
 
+    /* ---------- V1.27.0: browser storage first; Save to Downloads / Save as ---------- */
+
+    @PluginMethod
+    public void saveDownload(final PluginCall call) {
+        long id = call.getLong("id", -1L);
+        FBDownloader.get(getContext()).saveToDownloads(id, (err, info) -> {
+            JSObject r = new JSObject();
+            if (err == null) { r.put("ok", true); r.put("info", info); } else { r.put("ok", false); r.put("desc", err); }
+            call.resolve(r);
+        });
+    }
+
+    @PluginMethod
+    public void saveDownloadAs(PluginCall call) {
+        long id = call.getLong("id", -1L);
+        JSObject r = new JSObject();
+        String[] kept = FBDownloader.get(getContext()).keptInfo(id);
+        if (kept == null) { r.put("ok", false); r.put("desc", "The browser copy of this download is not there any more"); call.resolve(r); return; }
+        if (saveAsLauncher == null) { r.put("ok", false); r.put("desc", "Save as is not available here. Use Save to Downloads."); call.resolve(r); return; }
+        if (saveAsCall != null) { JSObject o = new JSObject(); o.put("ok", false); o.put("cancelled", true); saveAsCall.resolve(o); saveAsCall = null; }
+        try {
+            Intent it = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            it.addCategory(Intent.CATEGORY_OPENABLE);
+            it.setType(kept[1]);
+            it.putExtra(Intent.EXTRA_TITLE, kept[0]);
+            saveAsCall = call; saveAsId = id;
+            saveAsLauncher.launch(it);
+        } catch (Throwable e) {
+            saveAsCall = null; saveAsId = -1L;
+            r.put("ok", false); r.put("desc", "Could not open the file picker");
+            call.resolve(r);
+        }
+    }
+
     /* ---------- lifecycle ---------- */
 
     /** V1.14.1: leaves a full-screen video. Returns true if one was showing (so Back is used up). */
@@ -1901,6 +2139,30 @@ public class FBWebPlugin extends Plugin {
             Class<?> wc = Class.forName("androidx.webkit.WebViewCompat");
             wc.getMethod("addDocumentStartJavaScript", WebView.class, String.class, java.util.Set.class)
                 .invoke(null, w, STEALTH_JS, java.util.Collections.singleton("*"));
+        } catch (Throwable ignored) { }
+    }
+
+    /** V1.27.1: real desktop mode. Runs only when the user agent is the desktop one: forces a 1280 px wide viewport so pages lay out as on a PC. */
+    private static final String DESK_JS =
+        "(function(){try{"
+        + "if(/Android|Mobile/i.test(navigator.userAgent)||window.__fbDesk)return;window.__fbDesk=1;"
+        + "try{Object.defineProperty(navigator,'platform',{get:function(){return 'Linux x86_64'},configurable:true})}catch(e){}"
+        + "var t=0;function fix(){t=0;var d=document,h=d.head||d.documentElement;if(!h)return;var m=d.querySelector('meta[name=viewport]');"
+        + "if(!m){m=d.createElement('meta');m.name='viewport';h.appendChild(m)}"
+        + "var c='width=1280,user-scalable=yes';if(m.getAttribute('content')!==c)m.setAttribute('content',c)}"
+        + "function sch(){if(!t)t=setTimeout(fix,40)}"
+        + "fix();var mo=new MutationObserver(sch);mo.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['content']});"
+        + "setTimeout(function(){try{mo.disconnect()}catch(e){}},8000);"
+        + "}catch(e){}})();";
+
+    private void deskScript(WebView w) {
+        try {
+            Class<?> feat = Class.forName("androidx.webkit.WebViewFeature");
+            boolean ok = (Boolean) feat.getMethod("isFeatureSupported", String.class).invoke(null, "DOCUMENT_START_SCRIPT");
+            if (!ok) return;
+            Class<?> wc = Class.forName("androidx.webkit.WebViewCompat");
+            wc.getMethod("addDocumentStartJavaScript", WebView.class, String.class, java.util.Set.class)
+                .invoke(null, w, DESK_JS, java.util.Collections.singleton("*"));
         } catch (Throwable ignored) { }
     }
 
@@ -2005,13 +2267,16 @@ public class FBWebPlugin extends Plugin {
             Object ub = umB.getConstructor().newInstance();
             umB.getMethod("setBrandVersionList", java.util.List.class).invoke(ub, brands);
             umB.getMethod("setFullVersion", String.class).invoke(ub, full);
-            umB.getMethod("setPlatform", String.class).invoke(ub, "Android");
+            String curUa = w.getSettings().getUserAgentString(); // V1.27.1: desktop tabs report a desktop platform, not Android/mobile
+            boolean mob = curUa == null || curUa.contains("Android");
+            umB.getMethod("setPlatform", String.class).invoke(ub, mob ? "Android" : "Linux");
             String pv = Build.VERSION.RELEASE == null ? "14" : Build.VERSION.RELEASE;
             if (pv.indexOf('.') < 0) pv = pv + ".0.0"; else if (pv.indexOf('.', pv.indexOf('.') + 1) < 0) pv = pv + ".0";
+            if (!mob) pv = "6.5.0";
             umB.getMethod("setPlatformVersion", String.class).invoke(ub, pv);
-            umB.getMethod("setMobile", boolean.class).invoke(ub, true);
-            try { umB.getMethod("setModel", String.class).invoke(ub, Build.MODEL == null ? "" : Build.MODEL); } catch (Throwable ignored) { }
-            try { umB.getMethod("setArchitecture", String.class).invoke(ub, ""); } catch (Throwable ignored) { }
+            umB.getMethod("setMobile", boolean.class).invoke(ub, mob);
+            try { umB.getMethod("setModel", String.class).invoke(ub, mob ? (Build.MODEL == null ? "" : Build.MODEL) : ""); } catch (Throwable ignored) { }
+            try { umB.getMethod("setArchitecture", String.class).invoke(ub, mob ? "" : "x86"); } catch (Throwable ignored) { }
             try { umB.getMethod("setBitness", int.class).invoke(ub, 64); } catch (Throwable ignored) { }
             try { umB.getMethod("setWow64", boolean.class).invoke(ub, false); } catch (Throwable ignored) { }
             Object um = umB.getMethod("build").invoke(ub);
@@ -2112,8 +2377,8 @@ public class FBWebPlugin extends Plugin {
                         String ex = MimeTypeMap.getSingleton().getExtensionFromMimeType(mime);
                         if (ex != null) name = name + "." + ex;
                     }
-                    saveBytes(name, mime, bytes);
-                    o.put("ok", true); o.put("name", name);
+                    FBDownloader.get(getContext()).addLocal(name, mime, bytes); // V1.27.0
+                    o.put("ok", true); o.put("done", true); o.put("name", name);
                 } catch (Throwable e) {
                     o.put("ok", false); o.put("name", ""); o.put("desc", "Could not save: " + (e.getMessage() == null ? "download failed" : e.getMessage()));
                 }

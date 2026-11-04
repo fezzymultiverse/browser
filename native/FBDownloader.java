@@ -48,11 +48,14 @@ import java.util.concurrent.Executors;
  * - Follows redirects itself (http to https too), sends the page's cookies, user agent and referer, keeps Set-Cookie answers.
  * - Reports bytes, total, percentage and speed (event "dlprogress"), shows an Android progress notification, then "Download complete".
  * - Pause, resume, cancel, retry after a lost connection, up to three downloads at once, jobs survive an app restart.
- * - When finished, the file is saved into the phone's public Downloads/Festers folder (MediaStore on Android 10+, plain file below).
+ * - V1.27.0: when finished, the file is kept in the browser's own storage. Save to Downloads / Save as copy it out when the person asks.
  */
 public class FBDownloader {
 
     public interface Sink { void on(JSObject job, String kind); } // kind: start | progress | done | fail | state
+
+    /** V1.27.0: result of Save to Downloads / Save as. err is null on success, info is a short sentence for the toast. */
+    public interface Done { void on(String err, String info); }
 
     private static final class Stop extends Exception {
         final boolean cancel;
@@ -68,7 +71,7 @@ public class FBDownloader {
         long id;
         String url = "", name = "", mime = "", ua = "", referer = "", state = "queued", error = "", uri = "", path = "";
         long bytes, total = -1, speed, time;
-        boolean wifiOnly, nameFixed, netPaused, quiet;
+        boolean wifiOnly, nameFixed, netPaused, quiet, kept, saved;
         volatile boolean cancel, pause;
         long lastEmit, lastNote, lastSave, lastBytes, lastSample;
     }
@@ -104,6 +107,8 @@ public class FBDownloader {
                 j.state = o.optString("state", "failed"); j.error = o.optString("error"); j.uri = o.optString("uri"); j.path = o.optString("path");
                 j.bytes = o.optLong("bytes"); j.total = o.optLong("total", -1); j.time = o.optLong("time");
                 j.wifiOnly = o.optBoolean("wifiOnly"); j.nameFixed = o.optBoolean("nameFixed");
+                j.saved = o.has("saved") ? o.optBoolean("saved") : j.uri.length() > 0; // V1.27.0: older jobs were saved to Downloads straight away
+                j.kept = keepFile(j).isFile();
                 if ("downloading".equals(j.state) || "queued".equals(j.state) || "saving".equals(j.state)) {
                     j.state = "paused"; j.error = "Interrupted when the app closed. Tap resume."; j.netPaused = true;
                 }
@@ -496,11 +501,32 @@ public class FBDownloader {
         if (now - j.lastSave >= 3000) { j.lastSave = now; synchronized (this) { persist(); } }
     }
 
-    /* ---------- saving into the public Downloads folder ---------- */
+    /* ---------- V1.27.0: a finished download goes into the browser's own storage first ----------
+     * Nothing is written to the phone's Downloads here, so nothing can go "missing" from there. The person taps "Save to Downloads"
+     * (copy into the public Downloads folder) or "Save as" (any place they pick) when they want the file outside the browser.
+     * The browser copy lives in app storage (no permission needed) and is deleted when the download is removed from the list
+     * (Delete, Remove, Clear finished, Kill Switch, Blaze). */
 
     private void publish(Job j, File part) throws Exception {
         synchronized (this) { setState(j, "saving", ""); }
         j.speed = 0;
+        if (j.name.length() == 0) j.name = "festers-" + System.currentTimeMillis();
+        if (!keepCopy(j, part)) throw new Exception("Could not save: the browser storage could not be written (is the phone full?)");
+        j.kept = true;
+        j.saved = false;
+        j.uri = "";
+        j.path = "";
+        synchronized (this) {
+            j.bytes = j.total > 0 ? j.total : j.bytes;
+            j.error = "";
+            setState(j, "completed", "");
+        }
+        emit(j, "done");
+        note(j);
+    }
+
+    /** Copies the browser copy into the phone's public Downloads folder (MediaStore on Android 10+, plain file below). */
+    private void writePublic(Job j, File src) throws Exception {
         String name = j.name.length() == 0 ? "festers-" + System.currentTimeMillis() : j.name;
         String mime = j.mime.length() == 0 ? "application/octet-stream" : j.mime;
         if (Build.VERSION.SDK_INT >= 29) {
@@ -512,7 +538,7 @@ public class FBDownloader {
             cv.put(MediaStore.MediaColumns.IS_PENDING, 1);
             Uri u = cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
             if (u == null) throw new Exception("Could not save: Android refused to create the file in Downloads");
-            try (OutputStream os = cr.openOutputStream(u); InputStream in = new FileInputStream(part)) {
+            try (OutputStream os = cr.openOutputStream(u); InputStream in = new FileInputStream(src)) {
                 if (os == null) throw new Exception("Could not save: the file could not be opened");
                 byte[] buf = new byte[131072];
                 int n;
@@ -528,7 +554,6 @@ public class FBDownloader {
                 if (q != null && q.moveToFirst()) { String real = q.getString(0); if (real != null && real.length() > 0) name = real; }
             } catch (Throwable ignored) { }
             j.uri = u.toString();
-            j.path = "Downloads/" + name;
         } else {
             File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
             if (!dir.exists() && !dir.mkdirs()) throw new Exception("Could not save: cannot create Downloads");
@@ -539,33 +564,97 @@ public class FBDownloader {
                 String base = dot > 0 ? name.substring(0, dot) : name, ext = dot > 0 ? name.substring(dot) : "";
                 dest = new File(dir, base + " (" + (k++) + ")" + ext);
             }
-            try (OutputStream os = new FileOutputStream(dest); InputStream in = new FileInputStream(part)) {
+            try (OutputStream os = new FileOutputStream(dest); InputStream in = new FileInputStream(src)) {
                 byte[] buf = new byte[131072];
                 int n;
                 while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
             }
             name = dest.getName();
-            j.path = "Downloads/" + name;
+            j.uri = Uri.fromFile(dest).toString();
             final Job fj = j;
             MediaScannerConnection.scanFile(ctx, new String[]{dest.getAbsolutePath()}, new String[]{mime}, (p, uri) -> { if (uri != null) { fj.uri = uri.toString(); synchronized (FBDownloader.this) { persist(); } } });
-            if (j.uri.length() == 0) j.uri = Uri.fromFile(dest).toString();
         }
-        j.name = name;
-        keepCopy(j, part); // V1.26.0: in-app copy, kept until the download is removed from the list
-        try { part.delete(); } catch (Throwable ignored) { }
-        synchronized (this) {
-            j.bytes = j.total > 0 ? j.total : j.bytes;
-            j.error = "";
-            setState(j, "completed", "");
-        }
-        emit(j, "done");
-        note(j);
+        // j.name stays as it is: the browser copy is found by that name. Only the shown place changes.
+        j.path = "Downloads/" + name;
+        j.saved = true;
+        synchronized (this) { persist(); }
+        emit(j, "state");
     }
 
-    /* ---------- V1.26.0: the browser's own copy of every finished download ----------
-     * The public copy lives in the phone's Downloads. A second copy is kept inside the app (app-private storage, no permission needed)
-     * so Open still works if Android's Downloads entry is moved, renamed or refuses a viewer. The in-app copy is deleted when the
-     * download is removed from the list (Delete, Clear finished, Kill Switch, Blaze). */
+    /** "Save to Downloads": runs on the download pool, answers on that thread. */
+    public void saveToDownloads(final long id, final Done cb) {
+        pool.execute(() -> {
+            String err = null, info = "";
+            try {
+                Job j;
+                synchronized (FBDownloader.this) { j = jobs.get(id); }
+                if (j == null) err = "That download is no longer in the list";
+                else if (!"completed".equals(j.state)) err = "The download is not finished yet";
+                else if (j.saved && j.uri.length() > 0 && usable(Uri.parse(j.uri))) info = "Already in " + (j.path.length() > 0 ? j.path : "Downloads");
+                else {
+                    File src = keepFile(j);
+                    if (!src.isFile() || src.length() == 0) err = "The browser copy is not there any more. Download the file again.";
+                    else { writePublic(j, src); info = "Saved in " + j.path; }
+                }
+            } catch (Throwable e) { err = e.getMessage() == null ? "Could not save the file" : e.getMessage(); }
+            try { cb.on(err, info); } catch (Throwable ignored) { }
+        });
+    }
+
+    /** "Save as": copies the browser copy into the place the person picked (a content link from the system file picker). */
+    public void copyKeptTo(final long id, final Uri dest, final Done cb) {
+        pool.execute(() -> {
+            String err = null;
+            try {
+                Job j;
+                synchronized (FBDownloader.this) { j = jobs.get(id); }
+                File src = j == null ? null : keepFile(j);
+                if (src == null || !src.isFile() || src.length() == 0) err = "The browser copy is not there any more";
+                else {
+                    try (OutputStream os = ctx.getContentResolver().openOutputStream(dest, "wt"); InputStream in = new FileInputStream(src)) {
+                        if (os == null) throw new IOException("the chosen place could not be opened");
+                        byte[] buf = new byte[131072];
+                        int n;
+                        while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
+                        os.flush();
+                    }
+                }
+            } catch (Throwable e) { err = "Could not save: " + (e.getMessage() == null ? "write failed" : e.getMessage()); }
+            try { cb.on(err, err == null ? "Saved where you chose" : ""); } catch (Throwable ignored) { }
+        });
+    }
+
+    /** {name, mime} of a finished download whose browser copy is there, or null. Used to start Save as. */
+    public String[] keptInfo(long id) {
+        Job j;
+        synchronized (this) { j = jobs.get(id); }
+        if (j == null || !"completed".equals(j.state)) return null;
+        File f = keepFile(j);
+        if (!f.isFile() || f.length() == 0) return null;
+        String mt = j.mime.length() == 0 ? mimeByName(j.name) : j.mime;
+        return new String[]{j.name, mt};
+    }
+
+    /** Page-made downloads (blob: and data: links, saved images) have no network job. They are put in the same list, already finished. */
+    public Job addLocal(String nameIn, String mimeIn, byte[] bytes) throws Exception {
+        if (bytes == null) throw new IOException("Nothing to save");
+        String mime = (mimeIn == null || mimeIn.length() == 0) ? "application/octet-stream" : mimeIn;
+        String nm = cleanName(nameIn);
+        if (nm.length() == 0) nm = "festers-" + System.currentTimeMillis();
+        Job j = new Job();
+        synchronized (this) { j.id = nextId++; sp.edit().putLong("next", nextId).apply(); }
+        j.url = "local://" + j.id;
+        j.mime = mime; j.name = withExt(nm, mime); j.nameFixed = true; j.time = System.currentTimeMillis();
+        File d = keepDir(j);
+        if (!d.exists() && !d.mkdirs()) throw new IOException("Could not save: the browser storage could not be written");
+        try (FileOutputStream os = new FileOutputStream(keepFile(j))) { os.write(bytes); os.flush(); }
+        j.bytes = bytes.length; j.total = bytes.length; j.kept = true; j.saved = false; j.state = "completed"; j.path = ""; j.uri = "";
+        synchronized (this) { jobs.put(j.id, j); persist(); }
+        emit(j, "state");
+        return j;
+    }
+
+    /* ---------- the browser's own copy ---------- */
     private File keepDir(Job j) {
         File base = null;
         try { base = ctx.getExternalFilesDir("kept"); } catch (Throwable ignored) { }
@@ -578,17 +667,29 @@ public class FBDownloader {
         return new File(keepDir(j), n);
     }
 
-    private void keepCopy(Job j, File part) {
+    /** Moves (or copies) the finished .part file into the browser's storage. true only when the copy is there and complete. */
+    private boolean keepCopy(Job j, File part) {
+        File f = null;
         try {
             File d = keepDir(j);
-            if (!d.exists() && !d.mkdirs()) return;
-            File f = keepFile(j);
+            if (!d.exists() && !d.mkdirs()) return false;
+            f = keepFile(j);
+            if (f.exists()) f.delete();
+            long want = part.length();
+            if (part.renameTo(f)) return f.isFile() && f.length() == want;
             try (InputStream in = new FileInputStream(part); OutputStream os = new FileOutputStream(f)) {
                 byte[] buf = new byte[131072];
                 int n;
                 while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
+                os.flush();
             }
-        } catch (Throwable ignored) { }
+            boolean ok = f.isFile() && f.length() == want;
+            if (ok) { try { part.delete(); } catch (Throwable ignored) { } }
+            return ok;
+        } catch (Throwable e) {
+            try { if (f != null) f.delete(); } catch (Throwable ignored) { }
+            return false;
+        }
     }
 
     private void keepDelete(Job j) {
@@ -669,6 +770,7 @@ public class FBDownloader {
         o.put("progress", "completed".equals(st) ? 100 : (j.total > 0 ? (int) Math.min(100, j.bytes * 100 / j.total) : -1));
         o.put("speed", j.speed); o.put("desc", j.error); o.put("error", j.error);
         o.put("uri", j.uri); o.put("path", j.path); o.put("reason", 0); o.put("quiet", j.quiet);
+        o.put("kept", j.kept); o.put("saved", j.saved);
         return o;
     }
 
@@ -680,7 +782,7 @@ public class FBDownloader {
                 o.put("id", j.id); o.put("url", j.url); o.put("name", j.name); o.put("mime", j.mime); o.put("ua", j.ua); o.put("referer", j.referer);
                 o.put("state", j.state); o.put("error", j.error); o.put("uri", j.uri); o.put("path", j.path);
                 o.put("bytes", j.bytes); o.put("total", j.total); o.put("time", j.time);
-                o.put("wifiOnly", j.wifiOnly); o.put("nameFixed", j.nameFixed);
+                o.put("wifiOnly", j.wifiOnly); o.put("nameFixed", j.nameFixed); o.put("saved", j.saved);
                 a.put(o);
             }
             while (a.length() > 200) a.remove(0);
@@ -714,7 +816,10 @@ public class FBDownloader {
                 b.setSmallIcon(android.R.drawable.stat_sys_download_done).setContentText("Download complete").setOngoing(false).setAutoCancel(true);
                 try {
                     Intent v = new Intent(Intent.ACTION_VIEW);
-                    v.setDataAndType(Uri.parse(j.uri), j.mime.length() == 0 ? "*/*" : j.mime);
+                    Uri nu = keepUri(j); // V1.27.0: tapping the notification opens the browser copy
+                    if (nu == null && j.uri.length() > 0) nu = Uri.parse(j.uri);
+                    if (nu == null) throw new IllegalStateException("no link");
+                    v.setDataAndType(nu, j.mime.length() == 0 ? "*/*" : j.mime);
                     v.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
                     b.setContentIntent(PendingIntent.getActivity(ctx, (int) (j.id % 10000) + 1, v, pf));
                 } catch (Throwable e) { if (tap != null) b.setContentIntent(tap); }
