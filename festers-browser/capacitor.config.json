@@ -1,0 +1,8 @@
+{
+  "appId": "com.fezzy.festersbrowser",
+  "appName": "Festers Browser",
+  "webDir": "www",
+  "backgroundColor": "#ffffff",
+  "android": { "allowMixedContent": false },
+  "plugins": { "CapacitorHttp": { "enabled": true } }
+}

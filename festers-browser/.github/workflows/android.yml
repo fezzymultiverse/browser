@@ -1,0 +1,173 @@
+name: Build Android APK
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm install
+      - run: npx cap add android
+      - name: Network security config (user certificate authorities, http fallback)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          mkdir -p android/app/src/main/res/xml
+          cp ci/network_security_config.xml android/app/src/main/res/xml/network_security_config.xml
+          grep -q "networkSecurityConfig" "$M" || sed -i 's#<application#<application android:networkSecurityConfig="@xml/network_security_config"#' "$M"
+          grep -q "networkSecurityConfig" "$M" && echo "network security config present" || { echo "ERROR: could not add networkSecurityConfig"; exit 1; }
+      - name: Package visibility (see Conduint and autofill / passkey apps)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q "<queries>" "$M" || sed -i 's#<application#    <queries>\n        <package android:name="com.fezzy.conduint" />\n        <intent><action android:name="android.service.autofill.AutofillService" /></intent>\n        <intent><action android:name="android.service.credentials.CredentialProviderService" /></intent>\n    </queries>\n    <application#' "$M"
+          grep -q "<queries>" "$M" && echo "queries block present" || { echo "ERROR: could not add the queries block"; exit 1; }
+      - name: Allow reading network state (VPN status)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q ACCESS_NETWORK_STATE "$M" || sed -i 's#<uses-permission android:name="android.permission.INTERNET" */>#&\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />#' "$M"
+          grep -q ACCESS_NETWORK_STATE "$M" && echo "network state permission present" || echo "WARNING: could not add ACCESS_NETWORK_STATE"
+      - name: Biometric permission and library (vault fingerprint unlock)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q USE_BIOMETRIC "$M" || sed -i 's#<uses-permission android:name="android.permission.INTERNET" */>#&\n    <uses-permission android:name="android.permission.USE_BIOMETRIC" />#' "$M"
+          G=android/app/build.gradle
+          grep -q "androidx.biometric" "$G" || sed -i '0,/^dependencies {/s//dependencies {\n    implementation "androidx.biometric:biometric:1.1.0"/' "$G"
+          grep -q "androidx.biometric" "$G" && echo "biometric library present" || { echo "ERROR: could not add androidx.biometric to $G"; exit 1; }
+      - name: WebKit library (web passkeys, autofill)
+        run: |
+          G=android/app/build.gradle
+          grep -q "androidx.webkit:webkit" "$G" || sed -i '0,/^dependencies {/s//dependencies {\n    implementation "androidx.webkit:webkit:1.14.0"/' "$G"
+          grep -q "androidx.webkit:webkit" "$G" && echo "webkit library present" || { echo "ERROR: could not add androidx.webkit to $G"; exit 1; }
+      - name: Credentials libraries (Credential Manager for WebView passkeys, V1.19.3)
+        run: |
+          G=android/app/build.gradle
+          CRED_VER="${FB_CRED_VER:-1.5.0}"
+          grep -q "androidx.credentials:credentials:" "$G" || sed -i "0,/^dependencies {/s//dependencies {\n    implementation \"androidx.credentials:credentials:$CRED_VER\"/" "$G"
+          grep -q "androidx.credentials:credentials-play-services-auth" "$G" || sed -i "0,/^dependencies {/s//dependencies {\n    implementation \"androidx.credentials:credentials-play-services-auth:$CRED_VER\"/" "$G"
+          grep -q "androidx.credentials:credentials:" "$G" && grep -q "androidx.credentials:credentials-play-services-auth" "$G" && echo "credentials libraries present ($CRED_VER)" || { echo "ERROR: could not add androidx.credentials to $G"; exit 1; }
+      - name: Browser-origin permission for passkeys (V1.19.4)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          P=android.permission.CREDENTIAL_MANAGER_SET_ORIGIN
+          grep -q "$P\"" "$M" || sed -i "s#<application#    <uses-permission android:name=\"$P\" />\n    <application#" "$M"
+          grep -q "$P\"" "$M" && echo "CREDENTIAL_MANAGER_SET_ORIGIN declared" || { echo "ERROR: could not declare CREDENTIAL_MANAGER_SET_ORIGIN"; exit 1; }
+      - name: Install-apps permission and file provider (install downloaded APKs, open files)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q REQUEST_INSTALL_PACKAGES "$M" || sed -i 's#<uses-permission android:name="android.permission.INTERNET" */>#&\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />#' "$M"
+          grep -q REQUEST_INSTALL_PACKAGES "$M" && echo "install packages permission present" || { echo "ERROR: could not add REQUEST_INSTALL_PACKAGES"; exit 1; }
+          grep -q 'fileprovider' "$M" && echo "file provider present" || { echo "ERROR: Capacitor FileProvider missing from manifest"; exit 1; }
+      - name: Add browser, notification and media permissions
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          for P in android.permission.POST_NOTIFICATIONS android.permission.WAKE_LOCK android.permission.ACCESS_NETWORK_STATE android.permission.ACCESS_WIFI_STATE; do
+            grep -q "$P" "$M" || sed -i "s#<application#    <uses-permission android:name=\"$P\" />\n    <application#" "$M"
+          done
+      - name: Keep-alive service, battery exemption and legacy storage permissions
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          for P in android.permission.FOREGROUND_SERVICE android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS; do
+            grep -q "$P\"" "$M" || sed -i "s#<application#    <uses-permission android:name=\"$P\" />\n    <application#" "$M"
+          done
+          grep -q WRITE_EXTERNAL_STORAGE "$M" || sed -i "s#<application#    <uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\" android:maxSdkVersion=\"28\" />\n    <application#" "$M"
+          grep -q FBKeepAliveService "$M" || sed -i "s#</application>#        <service android:name=\".FBKeepAliveService\" android:exported=\"false\" android:foregroundServiceType=\"mediaPlayback\" />\n    </application>#" "$M"
+          for P in FOREGROUND_SERVICE FOREGROUND_SERVICE_MEDIA_PLAYBACK REQUEST_IGNORE_BATTERY_OPTIMIZATIONS WRITE_EXTERNAL_STORAGE; do
+            grep -q "android.permission.$P\"" "$M" && echo "$P present" || { echo "ERROR: could not add $P"; exit 1; }
+          done
+          grep -q 'FBKeepAliveService' "$M" && echo "keep-alive service declared" || { echo "ERROR: could not declare FBKeepAliveService"; exit 1; }
+      - name: Camera, microphone, location and media permissions
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          for P in android.permission.CAMERA android.permission.RECORD_AUDIO android.permission.MODIFY_AUDIO_SETTINGS android.permission.ACCESS_COARSE_LOCATION android.permission.ACCESS_FINE_LOCATION android.permission.READ_MEDIA_IMAGES android.permission.READ_MEDIA_VIDEO android.permission.READ_MEDIA_AUDIO; do
+            grep -q "$P\"" "$M" || sed -i "s#<application#    <uses-permission android:name=\"$P\" />\n    <application#" "$M"
+          done
+          grep -q 'android.permission.READ_EXTERNAL_STORAGE"' "$M" || sed -i "s#<application#    <uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\" android:maxSdkVersion=\"32\" />\n    <application#" "$M"
+          for F in android.hardware.camera android.hardware.microphone android.hardware.location; do
+            grep -q "$F" "$M" || sed -i "s#<application#    <uses-feature android:name=\"$F\" android:required=\"false\" />\n    <application#" "$M"
+          done
+          grep -q 'android.permission.CAMERA"' "$M" && echo "camera permission present" || { echo "ERROR: could not add CAMERA"; exit 1; }
+      - name: Register as an HTTP and HTTPS browser
+        run: |
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text()
+          # Capacitor's generated launcher activity is the first activity in the manifest.
+          a = s.find("<activity")
+          end = s.find(">", a)
+          if a < 0 or end < 0:
+              raise SystemExit("Could not find launcher activity in AndroidManifest.xml")
+          if "android.intent.action.VIEW" not in s:
+              filt = "\n            <intent-filter>\n                <action android:name=\"android.intent.action.VIEW\" />\n                <category android:name=\"android.intent.category.DEFAULT\" />\n                <category android:name=\"android.intent.category.BROWSABLE\" />\n                <data android:scheme=\"http\" />\n                <data android:scheme=\"https\" />\n            </intent-filter>"
+              s = s[:end+1] + filt + s[end+1:]
+              p.write_text(s)
+          PYCODE
+      - name: Install native FBWeb and FBVault plugins
+        run: |
+          D=android/app/src/main/java/com/fezzy/festersbrowser
+          mkdir -p "$D"
+          cp native/*.java "$D/"
+          # V1.20.2: fail fast (before Gradle) if MainActivity registers a plugin class that was not copied.
+          for C in $(grep -o 'registerPlugin([A-Za-z0-9_]*\.class)' native/MainActivity.java | sed 's/registerPlugin(//; s/\.class)//'); do
+            [ -f "$D/$C.java" ] && echo "plugin $C present" || { echo "ERROR: MainActivity registers $C but $D/$C.java was not copied"; exit 1; }
+          done
+      - run: |
+          sudo apt-get install -y librsvg2-bin
+          rsvg-convert -w 1024 -h 1024 assets/icon.svg -o assets/icon-only.png
+          cp assets/icon-only.png assets/icon.png
+          rsvg-convert -w 2732 -h 2732 assets/icon.svg -o assets/splash.png
+      - run: npx capacitor-assets generate --android
+        continue-on-error: true
+      - run: npx cap sync android
+      - name: Version code and persistent signing key (so updates install over the old app)
+        env:
+          KS_B64: ${{ secrets.FB_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.FB_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.FB_KEY_ALIAS }}
+        run: |
+          G=android/app/build.gradle
+          V=$(node -p "require('./package.json').version")
+          IFS=. read -r MA MI PA <<< "$V"
+          CODE=$((MA*10000 + MI*100 + PA))
+          sed -i "s/versionCode [0-9][0-9]*/versionCode $CODE/; s/versionName \"[^\"]*\"/versionName \"$V\"/" "$G"
+          grep -q "versionCode $CODE" "$G" && echo "versionCode $CODE, versionName $V" || { echo "ERROR: could not set versionCode"; exit 1; }
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ] && [ -n "$KS_ALIAS" ]; then
+            KF="${RUNNER_TEMP:-/tmp}/fb-signing.jks"
+            echo "$KS_B64" | base64 -d > "$KF"
+            [ -s "$KF" ] || { echo "ERROR: FB_KEYSTORE_B64 did not decode to a keystore"; exit 1; }
+            {
+              echo "FB_KS_FILE=$KF"
+              echo "FB_KS_PASS=$KS_PASS"
+              echo "FB_KS_ALIAS=$KS_ALIAS"
+            } >> "$GITHUB_ENV"
+            grep -q "FB_KS_FILE" "$G" || sed -i '0,/^android {/s//android {\n    signingConfigs {\n        debug {\n            storeFile file(System.getenv("FB_KS_FILE"))\n            storePassword System.getenv("FB_KS_PASS")\n            keyAlias System.getenv("FB_KS_ALIAS")\n            keyPassword System.getenv("FB_KS_PASS")\n        }\n    }/' "$G"
+            grep -q "FB_KS_FILE" "$G" && echo "persistent signing key in use" || { echo "ERROR: could not add the signing config"; exit 1; }
+          else
+            echo "WARNING: FB_KEYSTORE_B64, FB_KEYSTORE_PASSWORD or FB_KEY_ALIAS not set, so this build uses a throwaway debug key and cannot update over a build signed with a different key"
+          fi
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+      - name: Rename to signed APK
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          SIGNED=android/app/build/outputs/apk/debug/festers-browser-signed.apk
+          cp "$APK" "$SIGNED"
+          echo "Renamed for download: $SIGNED"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: festers-browser-signed-apk
+          path: android/app/build/outputs/apk/debug/festers-browser-signed.apk
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: android/app/build/outputs/apk/debug/festers-browser-signed.apk
