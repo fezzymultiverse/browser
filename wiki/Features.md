@@ -11,7 +11,7 @@
 
 ## Privacy and data
 - Burner windows (private tabs) with isolated storage and no history
-- Scorch and Burn to wipe site data (the browser's own bookmarks, notes and vault are kept)
+- Scorch and Blaze to wipe site data (Blaze can erase just what you pick, or everything) (the browser's own bookmarks, notes and vault are kept)
 - Encrypted password vault with TOTP, generator and CSV import
 - Breach checker (Have I Been Pwned, k-anonymity)
 - Encrypted `.festers` backup and full-setup zip backup; nothing leaves the phone

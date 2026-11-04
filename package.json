@@ -1,6 +1,6 @@
 {
   "name": "festers-browser",
-  "version": "1.27.6",
+  "version": "1.27.8",
   "private": true,
   "license": "MIT",
   "description": "Festers Browser, a private security-first mobile browser (Capacitor, Android)",

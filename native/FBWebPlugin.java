@@ -504,6 +504,9 @@ public class FBWebPlugin extends Plugin {
         private final Path seg = new Path();
         private final PathMeasure pm = new PathMeasure();
         private final android.animation.ArgbEvaluator ev = new android.animation.ArgbEvaluator();
+        private final Paint pawFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint pawGlow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF pawR = new RectF();
         private final float dn;
         private float len = 0f;
         private float phase = 0f;
@@ -518,6 +521,49 @@ public class FBWebPlugin extends Plugin {
             setVisibility(View.GONE);
             core.setStyle(Paint.Style.STROKE); core.setStrokeCap(Paint.Cap.ROUND); core.setStrokeWidth(3f * dn);
             glow.setStyle(Paint.Style.STROKE); glow.setStrokeCap(Paint.Cap.ROUND); glow.setStrokeWidth(9f * dn);
+            pawFill.setStyle(Paint.Style.FILL); pawGlow.setStyle(Paint.Style.FILL);
+        }
+
+        /** V1.27.7: one cyan neon paw print, toes up. s = paw size in px, rot = degrees, a = 0..1 brightness. A wide soft copy under it is the glow. */
+        private void drawPaw(Canvas c, float cx, float cy, float s, float rot, float a) {
+            if (a <= 0.02f) return;
+            for (int pass = 0; pass < 2; pass++) {
+                float k = pass == 0 ? 1.55f : 1f;
+                Paint p = pass == 0 ? pawGlow : pawFill;
+                p.setColor(0xFF00E5FF);
+                p.setAlpha((int) ((pass == 0 ? 70 : 255) * a));
+                c.save();
+                c.translate(cx, cy);
+                c.rotate(rot);
+                c.scale(k, k);
+                pawR.set(-0.42f * s, -0.02f * s, 0.42f * s, 0.52f * s);
+                c.drawOval(pawR, p);
+                float[][] toe = { { -0.55f, -0.22f, -22f }, { -0.19f, -0.50f, -7f }, { 0.19f, -0.50f, 7f }, { 0.55f, -0.22f, 22f } };
+                for (float[] t : toe) {
+                    c.save();
+                    c.translate(t[0] * s, t[1] * s);
+                    c.rotate(t[2]);
+                    pawR.set(-0.14f * s, -0.2f * s, 0.14f * s, 0.2f * s);
+                    c.drawOval(pawR, p);
+                    c.restore();
+                }
+                c.restore();
+            }
+        }
+
+        /** Four paws walking up the middle of the screen, left foot then right, each lighting up in turn and fading as the next one lands. */
+        private void drawPaws(Canvas c) {
+            int w = getWidth(), h = getHeight();
+            if (w <= 0 || h <= 0) return;
+            final int n = 4;
+            float s = 26f * dn;
+            float x0 = w / 2f, y0 = h * 0.68f, dy = Math.min(h * 0.085f, 64f * dn), dx = 20f * dn;
+            for (int i = 0; i < n; i++) {
+                float x = (phase * 1f - i / (float) n + 2f) % 1f;      // 0 when this paw lands
+                float a = x < 0.07f ? x / 0.07f : Math.max(0f, 1f - (x - 0.07f) / 0.58f);
+                boolean left = (i % 2 == 0);
+                drawPaw(c, x0 + (left ? -dx : dx), y0 - i * dy, s, left ? -9f : 9f, a);
+            }
         }
 
         @Override protected void onSizeChanged(int w, int h, int ow, int oh) {
@@ -552,6 +598,7 @@ public class FBWebPlugin extends Plugin {
         }
 
         @Override protected void onDraw(Canvas c) {
+            drawPaws(c);
             if (len <= 0f) return;
             float comet = len * 0.2f;
             float cl = comet / N;
@@ -595,6 +642,19 @@ public class FBWebPlugin extends Plugin {
     }
 
     private EdgeView edgeView;
+
+    /** V1.27.7: Tab Sleep asks this first. True while any app on the phone is playing music or video audio, so a background tab that is playing is never put to sleep. */
+    @PluginMethod
+    public void musicActive(final PluginCall call) {
+        JSObject o = new JSObject();
+        boolean on = false;
+        try {
+            android.media.AudioManager am = (android.media.AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+            on = am != null && am.isMusicActive();
+        } catch (Throwable ignored) { }
+        o.put("on", on);
+        call.resolve(o);
+    }
 
     @PluginMethod
     public void edgeLine(final PluginCall call) {
