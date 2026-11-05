@@ -113,6 +113,11 @@ jobs:
               s = s[:end+1] + filt + s[end+1:]
               p.write_text(s)
           PYCODE
+      - name: Launcher activity must be singleTask (links from other apps reuse the running app)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q 'android:launchMode="singleTask"' "$M" || sed -i '0,/<activity/s//<activity android:launchMode="singleTask"/' "$M"
+          grep -q 'android:launchMode="singleTask"' "$M" && echo "singleTask present" || { echo "ERROR: could not set launchMode singleTask"; exit 1; }
       - name: Install native FBWeb and FBVault plugins
         run: |
           D=android/app/src/main/java/com/fezzy/festersbrowser
@@ -127,47 +132,90 @@ jobs:
           rsvg-convert -w 1024 -h 1024 assets/icon.svg -o assets/icon-only.png
           cp assets/icon-only.png assets/icon.png
           rsvg-convert -w 2732 -h 2732 assets/icon.svg -o assets/splash.png
-      - run: npx capacitor-assets generate --android
-        continue-on-error: true
+      - name: Install Bojack launcher icon (fails the build if missing)
+        run: bash ci/set-icon.sh android
       - run: npx cap sync android
-      - name: Version code and persistent signing key (so updates install over the old app)
+      - name: Version code (always counts up) and RELEASE signing key
         env:
-          KS_B64: ${{ secrets.FB_KEYSTORE_B64 }}
-          KS_PASS: ${{ secrets.FB_KEYSTORE_PASSWORD }}
-          KS_ALIAS: ${{ secrets.FB_KEY_ALIAS }}
+          KS_B64: ${{ secrets.FB_KEYSTORE_B64 || secrets.KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.FB_KEYSTORE_PASSWORD || secrets.KEYSTORE_PASSWORD || secrets.KEYSTORE_PASS }}
+          KS_ALIAS: ${{ secrets.FB_KEY_ALIAS || secrets.KEY_ALIAS }}
+          KS_KEYPASS: ${{ secrets.FB_KEY_PASSWORD || secrets.KEY_PASSWORD }}
         run: |
+          set -euo pipefail
           G=android/app/build.gradle
           V=$(node -p "require('./package.json').version")
           IFS=. read -r MA MI PA <<< "$V"
-          CODE=$((MA*10000 + MI*100 + PA))
-          sed -i "s/versionCode [0-9][0-9]*/versionCode $CODE/; s/versionName \"[^\"]*\"/versionName \"$V\"/" "$G"
-          grep -q "versionCode $CODE" "$G" && echo "versionCode $CODE, versionName $V" || { echo "ERROR: could not set versionCode"; exit 1; }
-          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ] && [ -n "$KS_ALIAS" ]; then
-            KF="${RUNNER_TEMP:-/tmp}/fb-signing.jks"
-            echo "$KS_B64" | base64 -d > "$KF"
-            [ -s "$KF" ] || { echo "ERROR: FB_KEYSTORE_B64 did not decode to a keystore"; exit 1; }
-            {
-              echo "FB_KS_FILE=$KF"
-              echo "FB_KS_PASS=$KS_PASS"
-              echo "FB_KS_ALIAS=$KS_ALIAS"
-            } >> "$GITHUB_ENV"
-            grep -q "FB_KS_FILE" "$G" || sed -i '0,/^android {/s//android {\n    signingConfigs {\n        debug {\n            storeFile file(System.getenv("FB_KS_FILE"))\n            storePassword System.getenv("FB_KS_PASS")\n            keyAlias System.getenv("FB_KS_ALIAS")\n            keyPassword System.getenv("FB_KS_PASS")\n        }\n    }/' "$G"
-            grep -q "FB_KS_FILE" "$G" && echo "persistent signing key in use" || { echo "ERROR: could not add the signing config"; exit 1; }
-          else
-            echo "WARNING: FB_KEYSTORE_B64, FB_KEYSTORE_PASSWORD or FB_KEY_ALIAS not set, so this build uses a throwaway debug key and cannot update over a build signed with a different key"
+          # V1.27.14: (major*10000 + minor*100 + patch) * 1000 + run number. A new version always beats an old one and a re-run of the same version still counts up, so every APK installs over the last.
+          CODE=$(( (MA*10000 + MI*100 + PA) * 1000 + (GITHUB_RUN_NUMBER % 1000) ))
+          sed -i -E "s/^([[:space:]]*)versionCode[[:space:]]*=?[[:space:]]*[0-9]+/\1versionCode $CODE/; s/^([[:space:]]*)versionName[[:space:]]*=?[[:space:]]*\"[^\"]*\"/\1versionName \"$V\"/" "$G"
+          grep -Eq "^[[:space:]]*versionCode $CODE\$" "$G" && grep -Eq "^[[:space:]]*versionName \"$V\"\$" "$G" && echo "versionCode $CODE, versionName $V" || { echo "ERROR: could not set versionCode/versionName in $G"; exit 1; }
+          if [ -z "$KS_B64" ] || [ -z "$KS_PASS" ]; then
+            echo "ERROR: no signing key. Add the repository secrets FB_KEYSTORE_B64 (base64 -w0 of your .jks) and FB_KEYSTORE_PASSWORD (FB_KEY_ALIAS and FB_KEY_PASSWORD are optional)."
+            echo "This build stops here on purpose: before V1.27.14 a missing key silently produced a Debug APK named 'signed'."
+            exit 1
           fi
-      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
-      - name: Rename to signed APK
+          KF="${RUNNER_TEMP:-/tmp}/fb-release.jks"
+          printf '%s' "$KS_B64" | tr -d ' \r\n' | base64 -d > "$KF"
+          [ -s "$KF" ] || { echo "ERROR: FB_KEYSTORE_B64 did not decode to a keystore (create it with: base64 -w0 festers.jks)"; exit 1; }
+          export KS_PASS
+          LIST="$(keytool -list -keystore "$KF" -storepass:env KS_PASS 2>&1)" || { echo "ERROR: could not open the keystore. Check FB_KEYSTORE_PASSWORD."; exit 1; }
+          ALIASES="$(printf '%s\n' "$LIST" | awk -F', ' '/PrivateKeyEntry/ {print $1}')"
+          if [ -n "$KS_ALIAS" ]; then
+            A="$(printf '%s\n' "$ALIASES" | grep -ixF -- "$KS_ALIAS" | head -n 1 || true)"
+            [ -n "$A" ] || { echo "ERROR: FB_KEY_ALIAS does not match. Keys in the keystore:"; printf '%s\n' "$ALIASES" | sed 's/^/  - /'; exit 1; }
+          else
+            [ "$(printf '%s\n' "$ALIASES" | grep -c .)" -eq 1 ] || { echo "ERROR: FB_KEY_ALIAS not set and the keystore has several keys:"; printf '%s\n' "$ALIASES" | sed 's/^/  - /'; exit 1; }
+            A="$ALIASES"
+          fi
+          {
+            echo "FB_KS_FILE=$KF"
+            echo "FB_KS_PASS=$KS_PASS"
+            echo "FB_KS_ALIAS=$A"
+            echo "FB_KS_KEYPASS=${KS_KEYPASS:-$KS_PASS}"
+          } >> "$GITHUB_ENV"
+          # appended as a second android { } block: Gradle merges it into the first, so no text surgery on Capacitor's file
+          if ! grep -q "FB_KS_FILE" "$G"; then
+            cat >> "$G" <<'GRADLE'
+
+          // Festers CI (V1.27.14): sign the RELEASE build with the persistent key
+          android {
+              signingConfigs {
+                  fbRelease {
+                      storeFile file(System.getenv("FB_KS_FILE"))
+                      storePassword System.getenv("FB_KS_PASS")
+                      keyAlias System.getenv("FB_KS_ALIAS")
+                      keyPassword System.getenv("FB_KS_KEYPASS")
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.fbRelease
+                      debuggable false
+                  }
+              }
+          }
+          GRADLE
+          fi
+          grep -q "FB_KS_FILE" "$G" && echo "release signing config added (alias $A)" || { echo "ERROR: could not add the signing config"; exit 1; }
+      - name: Build release APK
+        run: cd android && chmod +x gradlew && ./gradlew assembleRelease
+      - name: Verify it is a signed Release, not Debug
+        run: bash ci/verify-release.sh android/app/build/outputs/apk/release/app-release.apk
+      - name: Name the APK with its version
+        id: apk
         run: |
-          APK=android/app/build/outputs/apk/debug/app-debug.apk
-          SIGNED=android/app/build/outputs/apk/debug/festers-browser-signed.apk
-          cp "$APK" "$SIGNED"
-          echo "Renamed for download: $SIGNED"
+          V=$(node -p "require('./package.json').version")
+          OUT="android/app/build/outputs/apk/release/festers-browser-V${V}-release.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$OUT"
+          echo "path=$OUT" >> "$GITHUB_OUTPUT"
+          echo "name=festers-browser-V${V}-release" >> "$GITHUB_OUTPUT"
+          echo "Built $OUT"
       - uses: actions/upload-artifact@v4
         with:
-          name: festers-browser-signed-apk
-          path: android/app/build/outputs/apk/debug/festers-browser-signed.apk
+          name: ${{ steps.apk.outputs.name }}
+          path: ${{ steps.apk.outputs.path }}
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          files: android/app/build/outputs/apk/debug/festers-browser-signed.apk
+          files: ${{ steps.apk.outputs.path }}

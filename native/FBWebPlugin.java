@@ -793,6 +793,7 @@ public class FBWebPlugin extends Plugin {
         s.setUserAgentString(desk ? desktopUa(base) : mobileUa(base));
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(desk);
+        try { s.setLayoutAlgorithm(desk ? WebSettings.LayoutAlgorithm.NORMAL : WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING); } catch (Throwable ignored) { } // V1.27.14: desktop pages are not re-flowed or text-inflated
     }
 
     private void emit(String name, JSObject o) { notifyListeners(name, o); }
@@ -1326,6 +1327,23 @@ public class FBWebPlugin extends Plugin {
                 }
                 if (sc.equals("about") || sc.equals("blob") || sc.equals("data") || sc.equals("javascript")) return false;
                 if (sc.equals("file") || sc.equals("content")) return true;
+                // V1.27.14: stay in the browser. An app hand-off (intent:, market:, fb:, vnd.youtube: ...) used to launch the app at once, even when a page
+                // redirected by itself. Now it launches only when the user tapped it AND the tab is not a desktop-site tab (tel:, mailto:, sms:, geo: still open
+                // on a tap in either mode). Otherwise an intent: link's own web address (or its browser_fallback_url) loads inside this tab.
+                boolean personal = sc.equals("tel") || sc.equals("mailto") || sc.equals("sms") || sc.equals("smsto") || sc.equals("geo");
+                boolean deskTab = Boolean.TRUE.equals(desktop.get(id));
+                if (!(r.hasGesture() && (!deskTab || personal))) {
+                    try {
+                        if (u.startsWith("intent:")) {
+                            Intent pi = Intent.parseUri(u, Intent.URI_INTENT_SCHEME);
+                            String dd = pi.getDataString();
+                            String fb0 = pi.getStringExtra("browser_fallback_url");
+                            if (dd != null && (dd.startsWith("https://") || dd.startsWith("http://"))) v.loadUrl(dd);
+                            else if (fb0 != null && (fb0.startsWith("https://") || fb0.startsWith("http://"))) v.loadUrl(fb0);
+                        }
+                    } catch (Throwable ignored) { }
+                    return true;
+                }
                 try {
                     Intent it = u.startsWith("intent:") ? Intent.parseUri(u, Intent.URI_INTENT_SCHEME) : new Intent(Intent.ACTION_VIEW, r.getUrl());
                     String fb = u.startsWith("intent:") ? it.getStringExtra("browser_fallback_url") : null;
@@ -2269,13 +2287,15 @@ public class FBWebPlugin extends Plugin {
     private static final String DESK_JS =
         "(function(){try{"
         + "if(/Android|Mobile/i.test(navigator.userAgent)||window.__fbDesk)return;window.__fbDesk=1;"
-        + "try{Object.defineProperty(navigator,'platform',{get:function(){return 'Linux x86_64'},configurable:true})}catch(e){}"
-        + "var t=0;function fix(){t=0;var d=document,h=d.head||d.documentElement;if(!h)return;var m=d.querySelector('meta[name=viewport]');"
+        + "function def(o,k,v){try{Object.defineProperty(o,k,{get:function(){return v},configurable:true})}catch(e){}}"
+        + "def(navigator,'platform','Linux x86_64');def(navigator,'maxTouchPoints',0);"
+        + "try{var sw=screen.width,sh=screen.height;if(sw&&sw<1200){var W=1280,H=Math.round(W*Math.min(sw,sh)/Math.max(sw,sh));def(screen,'width',W);def(screen,'height',H);def(screen,'availWidth',W);def(screen,'availHeight',H)}}catch(e){}"
+        + "var t=0,mo=new MutationObserver(function(){if(!t)t=setTimeout(function(){t=0;if(fix())arm()},40)});"
+        + "function fix(){var d=document,h=d.head;if(!h)return false;var m=d.querySelector('meta[name=viewport]');"
         + "if(!m){m=d.createElement('meta');m.name='viewport';h.appendChild(m)}"
-        + "var c='width=1280,user-scalable=yes';if(m.getAttribute('content')!==c)m.setAttribute('content',c)}"
-        + "function sch(){if(!t)t=setTimeout(fix,40)}"
-        + "fix();var mo=new MutationObserver(sch);mo.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['content']});"
-        + "setTimeout(function(){try{mo.disconnect()}catch(e){}},8000);"
+        + "var c='width=1280,user-scalable=yes';if(m.getAttribute('content')!==c)m.setAttribute('content',c);return true}"
+        + "function arm(){var h=document.head;if(!h)return;try{mo.disconnect();mo.observe(h,{childList:true,subtree:true,attributes:true,attributeFilter:['content','name']})}catch(e){}}"
+        + "if(fix())arm();else mo.observe(document,{childList:true,subtree:true});"
         + "}catch(e){}})();";
 
     private void deskScript(WebView w) {
@@ -2342,7 +2362,7 @@ public class FBWebPlugin extends Plugin {
 
     private void syncHints(WebView w, String url) {
         if (w == null || url == null) return;
-        boolean want = "chrome".equals(hintsPref); // V1.22.5: was || isGoogleSignIn(url); Prodigy does not override hints
+        boolean want = "chrome".equals(hintsPref) || isDeskView(w); // V1.22.5: was || isGoogleSignIn(url); Prodigy does not override hints. V1.27.14: desktop tabs always get desktop hints
         Boolean cur = hintState.get(w);
         if (cur != null && cur.booleanValue() == want) return;
         hintState.put(w, Boolean.valueOf(want));
@@ -2362,9 +2382,16 @@ public class FBWebPlugin extends Plugin {
         } catch (Throwable ignored) { }
     }
 
+    /** V1.27.14: a tab whose user agent has no "Android" is a desktop-site tab. */
+    private static boolean isDeskView(WebView w) {
+        try { String ua = w.getSettings().getUserAgentString(); return ua != null && !ua.contains("Android"); } catch (Throwable t) { return false; }
+    }
+
+    /** V1.27.14: desktop-site tabs ALWAYS present desktop client hints. Before, hints were only changed when the "chrome" hints setting was on, so in desktop mode the page still saw Sec-CH-UA-Mobile ?1 and navigator.userAgentData.mobile true, and sites kept serving their mobile layout. */
     private void chromeHints(WebView w) {
-        if (!"chrome".equals(hintsPref)) { hintsMode = "WebView default (not overridden)"; return; }
-        applyChrome(w);
+        boolean want = "chrome".equals(hintsPref) || isDeskView(w);
+        hintState.put(w, Boolean.valueOf(want));
+        if (want) applyChrome(w); else { resetHints(w); hintsMode = "WebView default (not overridden)"; }
     }
 
     private void applyChrome(WebView w) {
