@@ -21,29 +21,14 @@ jobs:
           distribution: temurin
           java-version: 21
       - name: Add Android Platform
-        run: npx cap add android
+        run: npx cap add android || true
       - name: Copy Custom Icons
         run: |
-          mkdir -p android/app/src/main/res/mipmap-hdpi
-          mkdir -p android/app/src/main/res/mipmap-mdpi
-          mkdir -p android/app/src/main/res/mipmap-xhdpi
-          mkdir -p android/app/src/main/res/mipmap-xxhdpi
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          mkdir -p android/app/src/main/res/drawable
-          
-          # Copy the generated icons from the repo into the Android project
-          # (Assuming your icons are in the root or assets folder)
+          mkdir -p android/app/src/main/res/mipmap-anydpi-v26
           cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
           cp ic_launcher_round.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png || true
           cp splash.png android/app/src/main/res/drawable/splash.png || true
-          cp ic_launcher_foreground.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png || true
-          
-          # If you have density-specific icons, copy them here
-          # cp mipmap-hdpi/icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png || true
-          # cp mipmap-mdpi/icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png || true
-          # cp mipmap-xhdpi/icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png || true
-          # cp mipmap-xxhdpi/icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png || true
-
       - name: Sync Capacitor
         run: npx cap sync android
       - name: Build APK
