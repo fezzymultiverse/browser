@@ -151,6 +151,11 @@ label.lb{display:block;margin:10px 0 4px;font-size:12px;color:var(--mu)}
 .nsearch{display:flex;align-items:center;gap:10px;width:min(620px,100%);margin:20px 0 8px;background:var(--s2);border:1px solid var(--bd);border-radius:999px;padding:0 8px 0 18px;height:52px}
 .nsearch:focus-within{border-color:var(--accent)}
 .nsearch input{flex:1;background:none;border:0;outline:0;color:var(--tx);font:inherit;font-size:16px;min-width:0}
+/* V1.27.10: the search text and its placeholder sit in the centre of the pill */
+.nsearch input{text-align:center;padding-left:10px}
+.nsearch input::placeholder{text-align:center;font-size:12px;letter-spacing:0}
+.nsearch{gap:6px}
+@media (max-width:340px){.nsearch input::placeholder{font-size:10px}}
 .sc{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:12px;width:min(640px,100%);margin-top:26px}
 .tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px 10px;background:var(--s1);border:1px solid var(--bd);border-radius:14px;color:var(--tx);text-decoration:none;font-size:12px;cursor:pointer}
 .tile:hover{border-color:var(--accent)}
@@ -827,7 +832,7 @@ html.vopen body::after{content:"";position:fixed;inset:0;pointer-events:none;z-i
 </script>
 <script>
 (()=>{'use strict';
-const VERSION='1.27.9';const CONFIG={repo:'philfesters/festers-browser',registerEmail:''};
+const VERSION='1.27.12';const CONFIG={repo:'philfesters/festers-browser',registerEmail:''};
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LS={get(k,d){try{const v=localStorage.getItem('fb:'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('fb:'+k,JSON.stringify(v));mirrorSoon()}catch(e){toast('Storage blocked or full')}if(k==='vault'&&v&&typeof syncKick==='function'){try{syncKick()}catch(e){}}}};
@@ -879,7 +884,7 @@ const mascot=(sz=64)=>`<svg width="${sz}" height="${sz}" viewBox="0 0 100 100" a
 (()=>{const l=document.createElement('link');l.rel='icon';l.href='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${MASCOT}</svg>`);document.head.appendChild(l)})();
 
 /* ---------- settings ---------- */
-const DEF={tabSleep:true,tabSleepMin:15,showQuotes:true,edgeLoader:true,lockOpen:true,cookies:'all',statusNote:false,scene:'ocean',mailGuard:true,askedDefault:false,autoFill:true,keepOnExit:true,theme:'light',postureOpen:true,threat:true,vpnGuard:false,accent:'#ff2d3d',topbar:'full',desktop:false,showRail:true,showSC:true,showDash:true,glow:true,showClock:true,showNet:true,startup:'restore',homepage:'about:newtab',dupTabWarn:true,engine:'duckduckgo',bangs:true,suggest:true,bmbar:false,tracker:'standard',httpsOnly:true,clearOnExit:false,greeting:true,autoOpen:true,autolock:5,clipClear:30,genLen:20,genUp:true,genLo:true,genDi:true,genSy:true,noscript:false,dns:'quad9',regEmail:'',aiSearch:true,groqModel:'openai/gpt-oss-120b',groqKeyId:'',groqRedact:true,groqSave:false,groqRotate:true,showDate:true,cleanUrls:true,pkGate:false,uiScale:100,reduceMotion:false,railLabels:true,shields:true,pkVault:false,pkApp:false,profileName:'Grant Festers',profileHandle:'@philfesters',dlConfirm:true,dlWarn:true,dlOwn:true,dlDelZip:false,dlWifi:false,dlAsk:false,tbPos:'top',savePw:true,aiRoute:'auto',aiFallback:true,longTok:5000,groqSmart:true,gemModel:'gemini-3.8-flash',gemKeyId:'',hints:'default',passkeys:true,passkeySkip:'accounts.google.com, google.com, github.com, gitlab.com'};
+const DEF={tabSleep:true,tabSleepMin:15,showQuotes:true,edgeLoader:true,lockOpen:true,cookies:'all',statusNote:false,scene:'ocean',mailGuard:true,askedDefault:false,autoFill:true,keepOnExit:true,theme:'light',postureOpen:true,threat:true,vpnGuard:false,accent:'#ff2d3d',topbar:'full',desktop:false,showRail:true,showSC:true,showDash:true,glow:true,showClock:true,showNet:true,startup:'restore',homepage:'about:newtab',dupTabWarn:true,engine:'duckduckgo',bangs:true,suggest:true,bmbar:false,tracker:'standard',httpsOnly:true,clearOnExit:false,greeting:true,autoOpen:true,autolock:5,clipClear:30,genLen:20,genUp:true,genLo:true,genDi:true,genSy:true,noscript:false,dns:'quad9',regEmail:'',aiSearch:true,groqModel:'openai/gpt-oss-120b',groqKeyId:'',groqRedact:true,groqSave:false,groqRotate:true,showDate:true,cleanUrls:true,pkGate:false,uiScale:100,reduceMotion:false,railLabels:true,shields:true,pkVault:false,pkApp:false,profileName:'Grant Festers',profileHandle:'@philfesters',dlConfirm:true,dlWarn:true,dlOwn:true,dlDelZip:false,dlWifi:false,dlAsk:false,dlAuto:true,tbPos:'top',savePw:true,aiRoute:'auto',aiFallback:true,longTok:5000,groqSmart:true,gemModel:'gemini-3.8-flash',gemKeyId:'',hints:'default',passkeys:true,passkeySkip:'accounts.google.com, google.com, github.com, gitlab.com'};
 try{['ej','syncLast','syncDay'].forEach(k=>localStorage.removeItem('fb:'+k))}catch(e){} /* V1.18.2: email backup removed, wipe its stored keys */
 let S=Object.assign({},DEF,LS.get('settings',{}));if(!['quad9','adguardf','cleanb','controld','mullvad'].includes(S.dns))S.dns='quad9';
 try{if(LS.get('pkV','')!=='2'){S.passkeys=true;if(!S.passkeySkip)S.passkeySkip=DEF.passkeySkip;S.startup='restore';LS.set('settings',S);LS.set('pkV','2')}}catch(e){} /* V1.23.0: Web passkeys ON and Restore tabs on start for everyone, once */
@@ -1060,7 +1065,7 @@ function renderTabs(){
   const u=t.hist[t.pos]||'';
   const icon=t.priv?`<span style="display:grid;place-items:center">${ic('burner',16)}</span>`:isWeb(u)?`${favImg(u)}`:mascot(16);
   const gl=t.col&&t.gn&&(ix===0||tabs[ix-1].col!==t.col)?`<em class="tgn" style="color:${t.col}">${esc(t.gn)}</em>`:'';
-  return `<div class="tab ${t.id===cur?'on':''} ${t.priv?'burner':''} ${t.col?'hasc':''} ${t.asleep?'asleep':''}" data-id="${t.id}" ${t.col?`style="--tc:${t.col}"`:''}>${gl}${icon}${t.asleep?'<span class="tz" title="Sleeping. Tap to wake.">❄ Zzz</span>':''}<span class="tt">${esc(t.title)}</span><button class="tx" data-x="${t.id}" aria-label="Close tab">${ic('close',14)}</button></div>`;
+  return `<div class="tab ${t.id===cur?'on':''} ${t.priv?'burner':''} ${t.col?'hasc':''} ${t.asleep?'asleep':''}" data-id="${t.id}" ${t.col?`style="--tc:${t.col}"`:''}>${gl}${icon}${t.asleep?'<span class="tz" title="Sleeping. Tap to wake.">❄ Zzz</span>':''}<span class="tt">${esc(t.title)}</span></div>`;
  }).join('');
  try{tabBadge()}catch(e){}
 }
@@ -1592,7 +1597,7 @@ function renderPrefs(t,hash){
   ${row('Interface size','Scale the whole browser.',sel('uiScale',[[90,'Small'],[100,'Normal'],[112,'Large'],[125,'Extra large']],true))}
   ${row('Reduce motion','Turn off animations and transitions.',tog('reduceMotion'))}
   ${row('Tab Sleep','A tab you have not opened for 15 minutes is put to sleep to free memory. It shows a snowflake Zzz and reloads when you tap it. Scroll position and unsent text on that page are lost. Nothing sleeps while the phone is playing audio.',tog('tabSleep'))}
-  ${row('Edge loading line','While a page loads, two glowing lines run round the edge of the screen and four cyan paw prints step up the middle.',tog('edgeLoader'))}
+  ${row('Edge loading line','While a page loads, two glowing lines run round the edge of the screen.',tog('edgeLoader'))}
   ${row('Side rail labels','Show names under the right-hand icons.',tog('railLabels'))}
   ${row('Dark Pages','Invert colours of embedded pages for night reading.',`<label class="sw"><input type="checkbox" data-ext="darkpage" ${extOn('darkpage')?'checked':''}><span></span></label>`)}`,
  home:`<h2>Home</h2>
@@ -1702,6 +1707,7 @@ downloads:`<h2>Downloads &amp; Files</h2>
   ${row('Install downloaded apps','Android makes you allow this yourself: Festers needs the "Install unknown apps" permission to open an .apk you downloaded. '+(FST.canInstall===true?'Allowed now.':FST.canInstall===false?'Not allowed yet.':'Status shows in the installed app.'),btn('instperm',FST.canInstall?'Manage':'Allow'))}
   ${row('Confirm before installing','Always ask before handing an .apk to the Android installer.',tog('dlConfirm'))}
   ${row('Warn about risky files','Ask first when saving .apk, .exe, .sh, .bat, .jar and similar files.',tog('dlWarn'))}
+  ${row('Save finished downloads to Downloads','When a download finishes, copy it into the phone Downloads folder right away. Off keeps it only inside Festers until you tap Save to Downloads or Save as.',tog('dlAuto'))}
   ${row('Ask before every download','Show a confirmation before media or files are saved.',tog('dlAsk'))}
   ${row('Wi-Fi only downloads','Do not download over mobile data.',tog('dlWifi'))}
   ${row('Extract zips into their own folder','Off puts the files straight into Downloads/Festers.',tog('dlOwn'))}
@@ -3909,6 +3915,15 @@ async function dlInit(){
  try{FBW().dlResumeNet()}catch(e){} /* downloads that were running when the app closed, or that lost the connection, continue now */
  addEventListener('online',()=>{try{FBW().dlResumeNet()}catch(e){}});
 }
+const DLAUTO=new Set();
+/* V1.27.12: a download that just finished is copied to the phone Downloads folder, unless Settings > Downloads says not to */
+function dlAutoSave(e,prev){
+ if(!NAT||S.dlAuto===false||!e||e.state!=='completed'||e.saved||e.kept===false)return;
+ if(prev&&prev.state==='completed')return;
+ if(DLAUTO.has(e.id))return;
+ DLAUTO.add(e.id);
+ try{FBW().saveDownload({id:e.id}).then(r=>{toast(r&&r.ok?(r.info||'Saved to Downloads'):((r&&r.desc)||'Could not save to Downloads'))}).catch(()=>{DLAUTO.delete(e.id)})}catch(_){DLAUTO.delete(e.id)}
+}
 function dlOnEvent(e){
  if(!e||e.id==null)return;
  const i=DL.jobs.findIndex(x=>x.id===e.id);
@@ -3916,6 +3931,7 @@ function dlOnEvent(e){
  const prev=i>=0?DL.jobs[i]:null;
  if(i>=0)DL.jobs[i]=e;else DL.jobs.unshift(e);
  dlBadge();
+ dlAutoSave(e,prev);
  if(panel!=='dl'||DL.tab!=='dl')return;
  const row=$(`[data-dj="${e.id}"]`);
  if(row&&prev&&prev.state===e.state){ /* same state: update the numbers in place, no flicker */

@@ -601,7 +601,7 @@ public class FBWebPlugin extends Plugin {
         }
 
         @Override protected void onDraw(Canvas c) {
-            drawPaws(c);
+            // V1.27.10: the four paw prints in the middle of the screen are no longer drawn (drawPaws is kept but not called).
             if (len <= 0f) return;
             float comet = len * 0.2f;
             float cl = comet / N;

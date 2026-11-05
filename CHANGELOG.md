@@ -1,3 +1,16 @@
+## V1.27.12
+- Downloads: a finished download is now copied into the phone Downloads folder straight away (a toast says where). Page-made downloads (blob and data links, saved images) too. New switch: Settings > Downloads & Files > Save finished downloads to Downloads (on by default). Off gives the V1.27.0 behaviour: the file stays inside Festers until you tap Save to Downloads or Save as. Old downloads in the list are not touched.
+- Tested: page script syntax, and the auto-save function on its own in Node with stand-in parts (saves a finished download once, skips a repeat event, a job already saved, a job with no browser copy, the switch off, and non-native). The call from the download event handler is one line, read but not run in the real page. NOT compiled, NOT run on a device.
+## V1.27.11
+- Downloads, Save as, Open and View did nothing in the built app. Cause: `.gitlab-ci.yml` built the app straight after `npx cap add android` and never ran `ci/android-setup.sh`, so the APK was missing the whole native layer (FBDownloader, FBFilesPlugin and the other plugins, the new MainActivity, the file provider settings, notification and storage permissions, the version code). The pipeline now runs `bash ci/android-setup.sh`, then `ci/set-icon.sh`, then `npx cap sync android` before Gradle. Signing still uses your KEYSTORE_B64, KEYSTORE_PASS and KEY_ALIAS variables, unchanged.
+- The build now gets versionCode from package.json (1.27.11 becomes 12711), so each release installs over the last one.
+- Tested: `ci/android-setup.sh` run twice on a fake Capacitor 7 project (permissions, native files copied, versionCode 12710 for 1.27.10, manifest XML valid, exit 0). NOT compiled, NOT run on GitLab CI or a device. The Java files have not been compiled by me.
+## V1.27.10
+- Loading: the four cyan paw prints that stepped up the middle of the screen are gone. The two glowing edge lines stay (FBWebPlugin EdgeView.onDraw no longer calls drawPaws). The Settings text for the edge loader no longer mentions paws.
+- Tabs: the X inside each tab pill is removed. Tabs still close from the tab manager (square button at the right end of the strip), the red Close all button, the menu (Close other tabs, Close all tabs), Back on an empty new tab, and Ctrl+W.
+- Start page: the "SEARCH FESTERS BROWSER HERE" text now sits in the centre of the search pill.
+- App icon: new `ci/set-icon.sh`, run by `.gitlab-ci.yml` right after `npx cap add android`. It copies `assets/android-res`, writes the adaptive icon files (white background, Bojack foreground) and checks the manifest points at `@mipmap/ic_launcher`.
+- Tested: page script syntax, tab pill markup and search pill alignment in headless Chromium at 360x740; `bash -n` on ci/set-icon.sh and a run of it on a fake android tree (twice). NOT compiled, NOT run on GitLab CI or a device.
 ## V1.27.9
 - Bottom panel: the open block (the one you toggled) now has a quarter-length neon line orbiting its border, same colours as the loading line (cyan, purple, pink, orange). CSS only (`#rail .rb.on::before`, `@property --fba`). With Reduce motion on, the quarter arc stays still.
 - Loading paws on a white screen: each paw now has a dark navy halo under the cyan glow, so the four footprints show on a white page as well as a dark one (FBWebPlugin EdgeView.drawPaw, three passes).
