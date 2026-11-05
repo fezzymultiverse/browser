@@ -182,4 +182,10 @@ if [ "$KS_HAVE_B64" = 1 ] && [ "$KS_HAVE_PASS" = 1 ]; then
 else
   echo "WARNING: no signing variables found (they may be Protected and this ref is not protected), so this build uses a throwaway debug key and cannot update over a build signed with a different key"
 fi
+echo "== V1.27.7 app icon: copy the pre-rendered launcher icons into the Android project (no sharp or rsvg needed) =="
+if [ -d assets/android-res ]; then
+  cp -r assets/android-res/. android/app/src/main/res/ && echo "launcher icons copied" || echo "WARNING: could not copy launcher icons"
+else
+  echo "WARNING: assets/android-res not found, the app will keep the default icon"
+fi
 echo "setup done"

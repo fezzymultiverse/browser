@@ -48,6 +48,22 @@ public class FBSysPlugin extends Plugin {
     catch(Throwable e){call.resolve(new JSObject().put("ok",false).put("error",String.valueOf(e.getMessage())));}
   }
   /** V1.23.7: the link another app asked Festers to open (no "url" when none). Read once, then cleared. */
+  /** V1.27.9: opens the Android share sheet (WhatsApp, email, Messages ...) for the current page. JS: FBSys.shareText({title,url}). */
+  @PluginMethod public void shareText(PluginCall call) {
+    String url=call.getString("url","");
+    String title=call.getString("title","");
+    if(url==null||url.trim().isEmpty()){call.reject("No link to share");return;}
+    try{
+      Intent it=new Intent(Intent.ACTION_SEND);
+      it.setType("text/plain");
+      if(title!=null&&!title.isEmpty())it.putExtra(Intent.EXTRA_SUBJECT,title);
+      it.putExtra(Intent.EXTRA_TEXT,(title!=null&&!title.isEmpty()?title+"\n":"")+url);
+      Intent ch=Intent.createChooser(it,"Share link");
+      ch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      getContext().startActivity(ch);
+      call.resolve();
+    }catch(Throwable e){call.reject("Share failed: "+e.getMessage());}
+  }
   @PluginMethod public void launchUrl(PluginCall call) {
     JSObject o=new JSObject();
     String u=MainActivity.takeLink();

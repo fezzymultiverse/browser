@@ -28,6 +28,10 @@ a{color:var(--accent)}
 .fav{width:16px;height:16px;border-radius:50%;background:var(--accent);color:var(--ink);font-size:10px;font-weight:700;display:grid;place-items:center;flex:none;text-transform:uppercase}
 #newtab{flex:none;width:32px;height:32px;margin-bottom:3px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:var(--mu)}
 #newtab:hover{background:var(--s3);color:var(--tx)}
+.tab.asleep{opacity:.65}.tab.asleep .tt{font-style:italic}
+.tz{flex:none;font:800 10px system-ui,sans-serif;letter-spacing:.04em;color:#00e5ff;text-shadow:0 0 6px rgba(0,229,255,.7);margin-right:3px}
+#closeall{flex:none;width:32px;height:32px;margin-bottom:3px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:#ff4d4d}
+#closeall:hover{background:var(--s3)}
 #toolbar{display:flex;align-items:center;gap:2px;padding:6px 8px}
 .ib{width:38px;height:38px;flex:none;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:var(--tx);padding:0}
 .ib:hover:not(:disabled){background:var(--s3)}
@@ -147,6 +151,11 @@ label.lb{display:block;margin:10px 0 4px;font-size:12px;color:var(--mu)}
 .nsearch{display:flex;align-items:center;gap:10px;width:min(620px,100%);margin:20px 0 8px;background:var(--s2);border:1px solid var(--bd);border-radius:999px;padding:0 8px 0 18px;height:52px}
 .nsearch:focus-within{border-color:var(--accent)}
 .nsearch input{flex:1;background:none;border:0;outline:0;color:var(--tx);font:inherit;font-size:16px;min-width:0}
+/* V1.27.10: the search text and its placeholder sit in the centre of the pill */
+.nsearch input{text-align:center;padding-left:10px}
+.nsearch input::placeholder{text-align:center;font-size:12px;letter-spacing:0}
+.nsearch{gap:6px}
+@media (max-width:340px){.nsearch input::placeholder{font-size:10px}}
 .sc{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:12px;width:min(640px,100%);margin-top:26px}
 .tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px 10px;background:var(--s1);border:1px solid var(--bd);border-radius:14px;color:var(--tx);text-decoration:none;font-size:12px;cursor:pointer}
 .tile:hover{border-color:var(--accent)}
@@ -605,6 +614,8 @@ html.fb-reduced-motion *,html.fb-reduced-motion *::before,html.fb-reduced-motion
 .ntnet .nn.vpn svg{color:#22c55e}
 .ntnet .nn b{font-weight:700;overflow-wrap:anywhere}
 .ntnet .nn small{display:block;color:var(--mu);font-size:11.5px;overflow-wrap:anywhere}
+.ntq{align-self:stretch;max-width:520px;margin:0 0 8px;padding:9px 12px;border-left:3px solid var(--accent);border-radius:0 12px 12px 0;background:var(--s2);font-size:12.5px;line-height:1.4;color:var(--tx);position:relative;z-index:2;transition:opacity .5s}
+.ntq:empty{display:none}.ntq.fo{opacity:0}.ntq i{display:block;font-style:italic}.ntq small{display:block;margin-top:3px;color:var(--mu);font-size:11.5px}
 .fxprev{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0;padding:10px 12px;border:1px solid var(--bd);border-radius:12px;background:var(--s2)}
 .fxprev small{display:block;color:var(--mu);font-size:12px}
 /* ===== V1.23.8 ===== */
@@ -651,6 +662,9 @@ html.fbld #fbline{opacity:1;animation:fbRun 1.1s ease-in-out infinite}
 #fbpaw{display:none;flex:none;place-items:center;color:#00e5ff;filter:drop-shadow(0 0 4px #00e5ff)}
 #fbpaw svg{fill:currentColor;stroke:none}
 html.fbld #fbpaw{display:grid;animation:fbPulse .8s ease-in-out infinite}
+#fbstop{display:none;flex:none;width:30px;height:30px;padding:0;border:0;border-radius:50%;place-items:center;background:rgba(255,61,61,.16);color:#ff4d4d}
+html.fbld #fbstop{display:grid}
+#fbstop:active{background:rgba(255,61,61,.34)}
 @keyframes fbPulse{0%,100%{transform:scale(.8);opacity:.6}50%{transform:scale(1.2);opacity:1}}
 /* vault unlocked: purple glow around the app */
 html.vopen body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99996;border-radius:2px;box-shadow:inset 0 0 0 2px #b66cff,inset 0 0 20px 3px rgba(182,108,255,.5);animation:fbVG 3s ease-in-out infinite}
@@ -716,12 +730,57 @@ html.vopen body::after{content:"";position:fixed;inset:0;pointer-events:none;z-i
 .fbks .ks-card b{font:900 20px system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 0 12px rgba(255,170,60,.7)}
 .fbks .ks-card small{font:700 11px system-ui,sans-serif;letter-spacing:.3em;color:#ffcf8a}
 .fbks .ks-card i{color:#ffb347;display:grid;place-items:center;filter:drop-shadow(0 0 12px rgba(255,170,60,.8))}
+/* V1.27.9: bottom panel toggle: a quarter-length neon line orbits the open block (same colours as the loading line). */
+@property --fba{syntax:'<angle>';inherits:false;initial-value:0deg}
+#rail .rb.on::before{content:"";position:absolute;top:0;left:0;right:0;bottom:0;height:auto;margin:0;padding:2px;border-radius:inherit;box-sizing:border-box;pointer-events:none;
+ background:conic-gradient(from var(--fba),transparent 0deg,#00e5ff 24deg,#b04dff 50deg,#ff2d95 72deg,#ff8a1f 90deg,transparent 90.6deg,transparent 360deg);
+ -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask-composite:exclude;
+ filter:drop-shadow(0 0 3px rgba(0,229,255,.9));animation:fbOrbit 2.4s linear infinite}
+@keyframes fbOrbit{to{--fba:360deg}}
+/* V1.27.9: tab strip buttons: tab manager (square + cyan count) and share */
+#tabsbtn,#shbtn{flex:none;position:relative;width:32px;height:32px;margin-bottom:3px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:var(--mu);padding:0}
+#tabsbtn:hover,#shbtn:hover{background:var(--s3);color:var(--tx)}
+#tabsbtn b{position:absolute;top:-3px;right:-4px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#00e5ff;color:#001418;font:800 10px/16px system-ui,sans-serif;text-align:center;box-shadow:0 0 8px rgba(0,229,255,.75)}
+/* V1.27.9: full-screen tab manager */
+#tabmgr{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;background:var(--bg);color:var(--tx);padding-top:env(safe-area-inset-top)}
+#tabmgr.on{display:flex}
+#tabmgr .tmh{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd);background:var(--s1)}
+#tabmgr .tmh b{flex:1;min-width:0;font-size:16px;letter-spacing:.02em}
+#tabmgr .tmh b em{font-style:normal;color:#00e5ff;text-shadow:0 0 8px rgba(0,229,255,.6)}
+#tabmgr .tmg{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px 12px calc(16px + env(safe-area-inset-bottom));align-content:start}
+@media (min-width:700px){#tabmgr .tmg{grid-template-columns:repeat(4,minmax(0,1fr))}}
+#tabmgr .tmc{position:relative;display:flex;flex-direction:column;gap:6px;min-height:96px;padding:10px 10px 8px;border:1px solid var(--bd);border-top:3px solid var(--tc,var(--bd));background:var(--s1);border-radius:14px;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .16s ease,opacity .16s ease,box-shadow .2s}
+#tabmgr .tmc.on{border-color:#00e5ff;border-top-color:var(--tc,#00e5ff);box-shadow:0 0 0 1px #00e5ff,0 0 14px rgba(0,229,255,.35)}
+#tabmgr .tmc.asleep{opacity:.74}
+#tabmgr .tmc .tmr{display:flex;align-items:center;gap:8px}
+#tabmgr .tmc .tmr>span:first-child{display:grid;place-items:center;flex:none}
+#tabmgr .tmc .tmt{flex:1;min-width:0;font-weight:700;font-size:13px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+#tabmgr .tmc small{color:var(--mu);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tabmgr .tmc .tmx{flex:none;width:28px;height:28px;border:0;border-radius:50%;background:var(--s2);color:var(--mu);display:grid;place-items:center;padding:0}
+#tabmgr .tmc .tmx:active{background:rgba(255,61,61,.25);color:#ff4d4d}
+#tabmgr .tmc .tmz{font:800 10px system-ui,sans-serif;letter-spacing:.04em;color:#00e5ff;text-shadow:0 0 6px rgba(0,229,255,.7)}
+#tabmgr .tmc .tmb{font:800 10px system-ui,sans-serif;letter-spacing:.04em;color:#ff8a1f}
+#tabmgr .tme{grid-column:1/-1;text-align:center;color:var(--mu);padding:36px 12px}
+#tabmgr .tmhint{grid-column:1/-1;text-align:center;color:var(--mu);font-size:11px;margin:-2px 0 2px}
+/* V1.27.9: History panel */
+.hpbar{display:flex;gap:8px;margin-bottom:8px}
+.hpbar .in{flex:1;min-width:0}
+.hpsum{margin:0 0 6px;color:var(--mu);font-size:12px}
+.hpi{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--bd)}
+.hpi>span.hf{flex:none;display:grid;place-items:center;width:22px}
+.hpi .hm{flex:1;min-width:0;cursor:pointer}
+.hpi .hm b,.hpi .hm small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hpi .hm small{color:var(--mu)}
+.hpi .ht{flex:none;color:var(--mu);font-size:11px}
+.hpi .hx{flex:none;width:30px;height:30px;border:0;background:none;color:var(--mu);border-radius:50%;display:grid;place-items:center;padding:0}
+.hpi .hx:active{background:rgba(255,61,61,.2);color:#ff4d4d}
+.hpd{padding:14px 6px 4px;font-weight:800;font-size:12px;letter-spacing:.05em;color:var(--mu);text-transform:uppercase}
 </style>
 </head>
 <body>
 <div id="app">
  <header id="top">
-  <div id="tabstrip"><div id="tabs"></div><button id="newtab" title="New tab" aria-label="New tab"></button></div>
+  <div id="tabstrip"><div id="tabs"></div><button id="tabsbtn" title="All tabs" aria-label="All tabs"></button><button id="newtab" title="New tab" aria-label="New tab"></button><button id="shbtn" title="Share this page" aria-label="Share this page"></button><button id="closeall" title="Close all tabs" aria-label="Close all tabs"></button></div>
   <div id="toolbar">
    <button class="ib" id="bBack" title="Back" aria-label="Back"></button>
    <button class="ib" id="bFwd" title="Forward" aria-label="Forward"></button>
@@ -743,6 +802,7 @@ html.vopen body::after{content:"";position:fixed;inset:0;pointer-events:none;z-i
   <button class="rb" data-p="view"></button>
   <button class="rb" data-p="media"></button>
   <button class="rb" data-p="bm"></button>
+  <button class="rb" data-p="hist"></button>
   <button class="rb" data-p="dl"></button>
   <button class="rb" data-p="col"></button>
   <button class="rb" data-p="vault"></button>
@@ -772,7 +832,7 @@ html.vopen body::after{content:"";position:fixed;inset:0;pointer-events:none;z-i
 </script>
 <script>
 (()=>{'use strict';
-const VERSION='1.27.6';const CONFIG={repo:'philfesters/festers-browser',registerEmail:''};
+const VERSION='1.27.13';const CONFIG={repo:'philfesters/festers-browser',registerEmail:''};
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LS={get(k,d){try{const v=localStorage.getItem('fb:'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('fb:'+k,JSON.stringify(v));mirrorSoon()}catch(e){toast('Storage blocked or full')}if(k==='vault'&&v&&typeof syncKick==='function'){try{syncKick()}catch(e){}}}};
@@ -793,7 +853,7 @@ back:'<path d="M15 18l-6-6 6-6"/>',fwd:'<path d="M9 18l6-6-6-6"/>',reload:'<path
 home:'<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>',star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
 starfill:'<path fill="currentColor" d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
 menu:'<circle cx="5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="19" cy="12" r="1.7" fill="currentColor"/>',
-plus:'<path d="M12 5v14M5 12h14"/>',close:'<path d="M6 6l12 12M18 6L6 18"/>',
+plus:'<path d="M12 5v14M5 12h14"/>',close:'<path d="M6 6l12 12M18 6L6 18"/>',closeall:'<rect x="3.5" y="8" width="12.5" height="12.5" rx="2"/><path d="M8 4.5h10.5a2 2 0 0 1 2 2V17"/><path d="M7.5 12.5l4.5 4.5M12 12.5L7.5 17"/>',
 lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
 unlock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
 note:'<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
@@ -824,7 +884,7 @@ const mascot=(sz=64)=>`<svg width="${sz}" height="${sz}" viewBox="0 0 100 100" a
 (()=>{const l=document.createElement('link');l.rel='icon';l.href='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${MASCOT}</svg>`);document.head.appendChild(l)})();
 
 /* ---------- settings ---------- */
-const DEF={edgeLoader:true,lockOpen:true,cookies:'all',statusNote:false,scene:'ocean',mailGuard:true,askedDefault:false,autoFill:true,keepOnExit:true,theme:'light',postureOpen:true,threat:true,vpnGuard:false,accent:'#ff2d3d',topbar:'full',desktop:false,showRail:true,showSC:true,showDash:true,glow:true,showClock:true,showNet:true,startup:'restore',homepage:'about:newtab',dupTabWarn:true,engine:'duckduckgo',bangs:true,suggest:true,bmbar:false,tracker:'standard',httpsOnly:true,clearOnExit:false,greeting:true,autoOpen:true,autolock:5,clipClear:30,genLen:20,genUp:true,genLo:true,genDi:true,genSy:true,noscript:false,dns:'quad9',regEmail:'',aiSearch:true,groqModel:'openai/gpt-oss-120b',groqKeyId:'',groqRedact:true,groqSave:false,groqRotate:true,showDate:true,cleanUrls:true,pkGate:false,uiScale:100,reduceMotion:false,railLabels:true,shields:true,pkVault:false,pkApp:false,profileName:'Grant Festers',profileHandle:'@philfesters',dlConfirm:true,dlWarn:true,dlOwn:true,dlDelZip:false,dlWifi:false,dlAsk:false,tbPos:'top',savePw:true,aiRoute:'auto',aiFallback:true,longTok:5000,groqSmart:true,gemModel:'gemini-3.8-flash',gemKeyId:'',hints:'default',passkeys:true,passkeySkip:'accounts.google.com, google.com, github.com, gitlab.com'};
+const DEF={tabSleep:true,tabSleepMin:15,showQuotes:true,edgeLoader:true,lockOpen:true,cookies:'all',statusNote:false,scene:'ocean',mailGuard:true,askedDefault:false,autoFill:true,keepOnExit:true,theme:'light',postureOpen:true,threat:true,vpnGuard:false,accent:'#ff2d3d',topbar:'full',desktop:false,showRail:true,showSC:true,showDash:true,glow:true,showClock:true,showNet:true,startup:'restore',homepage:'about:newtab',dupTabWarn:true,engine:'duckduckgo',bangs:true,suggest:true,bmbar:false,tracker:'standard',httpsOnly:true,clearOnExit:false,greeting:true,autoOpen:true,autolock:5,clipClear:30,genLen:20,genUp:true,genLo:true,genDi:true,genSy:true,noscript:false,dns:'quad9',regEmail:'',aiSearch:true,groqModel:'openai/gpt-oss-120b',groqKeyId:'',groqRedact:true,groqSave:false,groqRotate:true,showDate:true,cleanUrls:true,pkGate:false,uiScale:100,reduceMotion:false,railLabels:true,shields:true,pkVault:false,pkApp:false,profileName:'Grant Festers',profileHandle:'@philfesters',dlConfirm:true,dlWarn:true,dlOwn:true,dlDelZip:false,dlWifi:false,dlAsk:false,dlAuto:true,tbPos:'top',savePw:true,aiRoute:'auto',aiFallback:true,longTok:5000,groqSmart:true,gemModel:'gemini-3.8-flash',gemKeyId:'',hints:'default',passkeys:true,passkeySkip:'accounts.google.com, google.com, github.com, gitlab.com'};
 try{['ej','syncLast','syncDay'].forEach(k=>localStorage.removeItem('fb:'+k))}catch(e){} /* V1.18.2: email backup removed, wipe its stored keys */
 let S=Object.assign({},DEF,LS.get('settings',{}));if(!['quad9','adguardf','cleanb','controld','mullvad'].includes(S.dns))S.dns='quad9';
 try{if(LS.get('pkV','')!=='2'){S.passkeys=true;if(!S.passkeySkip)S.passkeySkip=DEF.passkeySkip;S.startup='restore';LS.set('settings',S);LS.set('pkV','2')}}catch(e){} /* V1.23.0: Web passkeys ON and Restore tabs on start for everyone, once */
@@ -962,7 +1022,7 @@ const T=id=>tabs.find(t=>t.id===id),curTab=()=>T(cur);
 const homeUrl=()=>(S.homepage&&S.homepage.trim())||'about:newtab';
 function newTab(url,o){
  o=o||{};
- const t={id:++seq,priv:!!o.priv,hist:[],pos:-1,title:'New tab',el:document.createElement('div'),opener:o.opener||0,lazy:!!o.lazy};
+ const t={id:++seq,priv:!!o.priv,hist:[],pos:-1,title:'New tab',el:document.createElement('div'),opener:o.opener||0,lazy:!!o.lazy,lastUse:Date.now()};
  t.el.className='view';views.appendChild(t.el);tabs.push(t);
  nav(t,url||homeUrl(),{user:!!o.user});
  if(o.bg)renderTabs();else switchTab(t.id);
@@ -987,7 +1047,7 @@ function load(t){
  syncNative();
 }
 function switchTab(id){
- cur=id;{const lt=curTab();if(lt&&lt.lazy){lt.lazy=false;load(lt)}}tabs.forEach(t=>t.el.classList.toggle('on',t.id===id));
+ {const pv=curTab();if(pv)pv.lastUse=Date.now()}cur=id;{const lt=curTab();if(lt){lt.lastUse=Date.now();if(lt.lazy){lt.lazy=false;lt.asleep=false;load(lt)}}}tabs.forEach(t=>t.el.classList.toggle('on',t.id===id));
  renderTabs();syncBar();saveSession();syncNative();setTimeout(()=>applyView(curTab()),0);
  {const ct=curTab();if(ct&&ct.gone)goneRevive(ct)}
  const on=$('.tab.on');if(on)on.scrollIntoView({inline:'nearest',block:'nearest'});
@@ -1005,8 +1065,9 @@ function renderTabs(){
   const u=t.hist[t.pos]||'';
   const icon=t.priv?`<span style="display:grid;place-items:center">${ic('burner',16)}</span>`:isWeb(u)?`${favImg(u)}`:mascot(16);
   const gl=t.col&&t.gn&&(ix===0||tabs[ix-1].col!==t.col)?`<em class="tgn" style="color:${t.col}">${esc(t.gn)}</em>`:'';
-  return `<div class="tab ${t.id===cur?'on':''} ${t.priv?'burner':''} ${t.col?'hasc':''}" data-id="${t.id}" ${t.col?`style="--tc:${t.col}"`:''}>${gl}${icon}<span class="tt">${esc(t.title)}</span><button class="tx" data-x="${t.id}" aria-label="Close tab">${ic('close',14)}</button></div>`;
+  return `<div class="tab ${t.id===cur?'on':''} ${t.priv?'burner':''} ${t.col?'hasc':''} ${t.asleep?'asleep':''}" data-id="${t.id}" ${t.col?`style="--tc:${t.col}"`:''}>${gl}${icon}${t.asleep?'<span class="tz" title="Sleeping. Tap to wake.">❄ Zzz</span>':''}<span class="tt">${esc(t.title)}</span></div>`;
  }).join('');
+ try{tabBadge()}catch(e){}
 }
 $('#tabs').addEventListener('click',e=>{
  const x=e.target.closest('[data-x]');if(x){e.stopPropagation();closeTab(+x.dataset.x);return}
@@ -1125,7 +1186,7 @@ function syncNative(){
  // V1.21.7: #sugg (address-bar suggestions) used to be in this list, so every keystroke while searching toggled .on/.off on it,
  // which hid and reshowed the whole native page view each time (the flicker). Suggestions only cover the top of the screen, so
  // instead of hiding the page for them, the native view's top edge is pushed down below the open dropdown (see sr below).
- const t=curTab(),over=$('#menu.on,#mbg.on,#drawer.on,#flame,#engDd,.fbfx,#ksheet.on,#fblock');
+ const t=curTab(),over=$('#menu.on,#mbg.on,#drawer.on,#tabmgr.on,#flame,#engDd,.fbfx,#ksheet.on,#fblock');
  let k;
  if(t&&isNat(t)&&!over){
   const r=views.getBoundingClientRect(),fb=$('.nfind,.nfill',t.el),sg=$('#sugg.on'),
@@ -1217,6 +1278,7 @@ window.__fbBack=()=>{
  if($('#sugg.on')){$('#sugg').classList.remove('on');return true}
  const rd=$('#reader');if(rd){rd.remove();return true}
  const dv=$('#dv');if(dv){const x=$('#dvx',dv);if(x)x.click();else dv.remove();return true}
+ if($('#tabmgr.on')){tmHide();return true}
  if($('#drawer.on')){closePanel();return true}
  const t=curTab();
  const fb=t&&$('.nfind',t.el);if(fb){fb.remove();try{FBW().clearFind({id:t.id})}catch(e){}nsSched();return true}
@@ -1336,7 +1398,7 @@ function ntScene(){
 setInterval(()=>{if(S.scene!=='auto'||document.hidden)return;document.querySelectorAll('.ntscene').forEach(e=>{const w=document.createElement('div');w.innerHTML=ntScene();if(w.firstChild)e.replaceWith(w.firstChild)})},60000);
 
 /* ---------- V1.24.0: start page, under the clock: Wi-Fi name, and where the VPN comes out ---------- */
-const NETI={geo:null,at:0,busy:false,vpn:false,fail:0};
+const NETI={geo:null,at:0,busy:false,vpn:false,fail:0,net:null};
 async function vpnPlace(force){
  if(!force&&NETI.geo&&Date.now()-NETI.at<120000)return NETI.geo;
  if(NETI.busy)return NETI.geo;
@@ -1355,9 +1417,13 @@ function ntNetHtml(d,vpn,geo,loading){
  if(d&&d.wifiSsid)h+=`<div class="nn wifi">${ic('wifi',15)}<span><b>${esc(d.wifiSsid)}</b><small>Wi-Fi${d.wifiMbps>0?' · '+d.wifiMbps+' Mbps':''}</small></span></div>`;
  else if(d&&d.netType==='wifi'&&d.wifiLocPerm===false)h+=`<button type="button" class="nn wifi" data-nn="wifiperm">${ic('wifi',15)}<span><b>Wi-Fi</b><small>Tap to show the network name</small></span></button>`;
  else if(d&&d.netType==='wifi'&&d.wifiLocOff)h+=`<div class="nn wifi">${ic('wifi',15)}<span><b>Wi-Fi</b><small>Turn Location on to show the network name</small></span></div>`;
- if(vpn){
-  if(geo){const prov=geo.connection&&(geo.connection.isp||geo.connection.org)||'';h+=`<div class="nn vpn">${ic('globe',15)}<span><b>${esc(vpnPlaceText(geo)||'Location unknown')}</b><small>VPN exit${prov?' · '+esc(prov):''}</small></span></div>`}
+ const prov=geo&&geo.connection&&(geo.connection.isp||geo.connection.org)||'';
+if(vpn){
+  if(geo)h+=`<div class="nn vpn">${ic('globe',15)}<span><b>${esc(vpnPlaceText(geo)||'Location unknown')}</b><small>VPN exit${geo.ip?' · '+esc(geo.ip):''}${prov?' · '+esc(prov):''}</small></span></div>`;
   else h+=`<div class="nn vpn">${ic('globe',15)}<span><b>VPN on</b><small>${loading?'Finding where it comes out…':'Could not look up the VPN place'}</small></span></div>`}
+else{
+  if(geo)h+=`<div class="nn ip">${ic('globe',15)}<span><b>${esc(vpnPlaceText(geo)||'Location unknown')}</b><small>Your IP${geo.ip?' · '+esc(geo.ip):''}${prov?' · '+esc(prov):''}</small></span></div>`;
+  else h+=`<div class="nn ip">${ic('globe',15)}<span><b>Your IP</b><small>${loading?'Finding your place…':'Could not look up your place'}</small></span></div>`}
  return h}
 function ntNetStart(t){
  const box=$('#ntnet',t.el);if(!box)return;
@@ -1370,17 +1436,38 @@ function ntNetStart(t){
   try{
    let d=DEV;if(!d||!d.t||Date.now()-d.t>4000){try{d=await devRead()}catch(e){}}
    const vpn=!!(d&&d.netVpnOn)||VG.state===true;
-   if(vpn&&!NETI.vpn){NETI.geo=null;NETI.fail=0}
-   NETI.vpn=vpn;
-   box.innerHTML=ntNetHtml(d,vpn,vpn?NETI.geo:null,true);
-   if(vpn){const g=await vpnPlace();if(box.isConnected&&NETI.vpn)box.innerHTML=ntNetHtml(d,true,g,false)}
+   const nt=d&&d.netType||null;
+   if(vpn!==NETI.vpn||(nt&&nt!==NETI.net)){NETI.geo=null;NETI.fail=0}
+   NETI.vpn=vpn;if(nt)NETI.net=nt;
+   box.innerHTML=ntNetHtml(d,vpn,NETI.geo,true);
+   const g=await vpnPlace();if(box.isConnected&&NETI.vpn===vpn)box.innerHTML=ntNetHtml(d,vpn,g,!g&&!NETI.fail)
   }catch(e){}
   busy=false};
  draw();timer=setInterval(draw,6000);
 }
+const PQ=[
+ ["Privacy is the power to selectively reveal oneself to the world.","Eric Hughes, A Cypherpunk’s Manifesto, 1993"],
+ ["Arguing that you don’t care about the right to privacy because you have nothing to hide is no different than saying you don’t care about free speech because you have nothing to say.","Edward Snowden"],
+ ["The right to be let alone, the most comprehensive of rights and the right most valued by civilized men.","Justice Louis Brandeis, Olmstead v. United States, 1928"],
+ ["Privacy is not an option, and it shouldn’t be the price we accept for just getting on the Internet.","Gary Kovacs, 2012"],
+ ["Security is a process, not a product.","Bruce Schneier"],
+ ["Strategy Over Impulse.","S.O.I."],
+ ["Every site gets its own password. Passkeys where you can.","Festers tip"],
+ ["A link you did not expect is a link you do not tap.","Festers tip"],
+ ["A VPN hides your address from the site. It does not hide you from the VPN.","Festers tip"],
+ ["Update the phone. Most breaches walk through a door that already has a fix.","Festers tip"]];
+function ntQuoteStart(t){
+ const box=$('#ntq',t.el);if(!box)return;
+ if(S.showQuotes===false){box.innerHTML='';return}
+ const Q=PQ.slice();for(let k=Q.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[Q[k],Q[r]]=[Q[r],Q[k]]}
+ let i=0;
+ const show=()=>{const q=Q[i%Q.length];box.innerHTML=`<i>“${esc(q[0])}”</i><small>${esc(q[1])}</small>`};
+ show();
+ const timer=setInterval(()=>{if(!box.isConnected){clearInterval(timer);return}if(document.hidden)return;box.classList.add('fo');setTimeout(()=>{i++;show();box.classList.remove('fo')},500)},10000);
+}
 function renderNewTab(t){
  const hr=new Date().getHours(),g=hr<5?'Still up':hr<12?'Good morning':hr<18?'Good afternoon':'Good evening';
- t.el.innerHTML=`<div class="nt ${S.glow?'':'noglow'}">${ntScene()}${zoneHtml()}${S.showClock?`<div class="ntchip">${ic(hr>=6&&hr<18?'flame':'clock',15)}<span id="ntclk"></span></div>`:''}<div class="ntnet" id="ntnet"></div><button class="nttheme" id="nttheme" aria-label="Switch theme" title="Switch theme">${ic('sun',15).replace('class="ic"','class="ic sun"')}<span class="trk"><i class="knob"></i></span>${ic('moon',15).replace('class="ic"','class="ic moon"')}</button><button class="ib ntset" id="ntset" aria-label="Page settings" title="Page settings">${ic('gear',22)}</button>${t.priv?`<div style="color:var(--accent);margin-top:10px">${ic('burner',72)}</div>`:mascot(100)}
+ t.el.innerHTML=`<div class="nt ${S.glow?'':'noglow'}">${ntScene()}${zoneHtml()}${S.showClock?`<div class="ntchip">${ic(hr>=6&&hr<18?'flame':'clock',15)}<span id="ntclk"></span></div>`:''}<div class="ntnet" id="ntnet"></div><div class="ntq" id="ntq"></div><button class="nttheme" id="nttheme" aria-label="Switch theme" title="Switch theme">${ic('sun',15).replace('class="ic"','class="ic sun"')}<span class="trk"><i class="knob"></i></span>${ic('moon',15).replace('class="ic"','class="ic moon"')}</button><button class="ib ntset" id="ntset" aria-label="Page settings" title="Page settings">${ic('gear',22)}</button>${t.priv?`<div style="color:var(--accent);margin-top:10px">${ic('burner',72)}</div>`:mascot(100)}
  ${chainWord()}
  <div class="ntduty">Bojack Security On Duty</div>
  ${t.priv?`<div class="mu" style="text-align:center;max-width:420px">Burner window. Nothing from this window is saved: no history, no cookies kept. Bookmarks and the vault still work.</div>`:(S.greeting?`<div class="mu">${g}.</div>`:'')}
@@ -1392,10 +1479,10 @@ function renderNewTab(t){
  <a class="tile" id="scedit"><span class="fav" style="background:var(--s3);color:var(--tx)">${ic('edit',16)}</span><span class="t">Edit</span></a></div>`:''}</div>`;
  t.el.addEventListener('click',e=>{const r=e.target.closest('[data-recent-url]');if(r&&r.dataset.recentUrl)openApp(r.dataset.recentUrl)});
  const sf=$('#nsf',t.el),si=$('#nsi',t.el);
- try{ntNetStart(t)}catch(e){}
+ try{ntNetStart(t)}catch(e){}try{ntQuoteStart(t)}catch(e){}
  const clk=$('#ntclk',t.el);if(clk){const tick=()=>{if(!clk.isConnected)return;const d=new Date();clk.textContent=(S.showDate?d.toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'})+' · ':'')+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});setTimeout(tick,15000)};tick()}
  $('#nttheme',t.el).onclick=e=>{e.stopPropagation();if(eff()==='dark'){S.darkKind=S.theme==='amoled'?'amoled':'dark';setS('theme','light')}else setS('theme',S.darkKind==='amoled'?'amoled':'dark');toast(S.theme==='amoled'?'Festers AMOLED':eff()==='dark'?'Festers Dark':'Festers Light')};
- $('#ntset',t.el).onclick=e=>{e.stopPropagation();const old=$('.ntpop',t.el);if(old){old.remove();return}$('.nt',t.el).insertAdjacentHTML('beforeend',`<div class="ntpop">${row('Shortcuts','',tog('showSC'))}${row('Security dashboard','',tog('showDash'))}${row('Greeting','',tog('greeting'))}${row('Clock','',tog('showClock'))}${row('Wi-Fi name and VPN place','',tog('showNet'))}${row('Red glow background','',tog('glow'))}<div class="row"><div class="rt"><b>All new tab settings</b></div><div class="rc">${btn('ntall','Open')}</div></div></div>`);const pop=$('.ntpop',t.el);pop.onclick=ev=>ev.stopPropagation();pop.onchange=ev=>{const k=ev.target.dataset.pref;if(k){setS(k,ev.target.checked);renderNewTab(t);}};$('[data-act=ntall]',pop).onclick=()=>openInternal('about:preferences#newtab')};
+ $('#ntset',t.el).onclick=e=>{e.stopPropagation();const old=$('.ntpop',t.el);if(old){old.remove();return}$('.nt',t.el).insertAdjacentHTML('beforeend',`<div class="ntpop">${row('Shortcuts','',tog('showSC'))}${row('Security dashboard','',tog('showDash'))}${row('Greeting','',tog('greeting'))}${row('Clock','',tog('showClock'))}${row('Wi-Fi, IP and place','',tog('showNet'))}${row('Privacy quotes','',tog('showQuotes'))}${row('Red glow background','',tog('glow'))}<div class="row"><div class="rt"><b>All new tab settings</b></div><div class="rc">${btn('ntall','Open')}</div></div></div>`);const pop=$('.ntpop',t.el);pop.onclick=ev=>ev.stopPropagation();pop.onchange=ev=>{const k=ev.target.dataset.pref;if(k){setS(k,ev.target.checked);renderNewTab(t);}};$('[data-act=ntall]',pop).onclick=()=>openInternal('about:preferences#newtab')};
  $('.nt',t.el).onclick=()=>{const p=$('.ntpop',t.el);if(p)p.remove()};
  if($('.dash',t.el)){const D=$('.dash',t.el);
   devTick();
@@ -1477,7 +1564,8 @@ function renderPrefs(t,hash){
   ${row('Security dashboard','Show the live posture score and quick actions on the start page.',tog('showDash'))}
   ${row('Greeting','Show a hello on the start page.',tog('greeting'))}
   ${row('Clock','Show the time chip in the top left corner of the start page.',tog('showClock'))}
-  ${row('Wi-Fi name and VPN place','Under the clock: the Wi-Fi you are on, and where your VPN comes out (city, region, postcode, country and the provider). The place is looked up with a free IP service only while a VPN is on.',tog('showNet'))}
+  ${row('Wi-Fi, IP and place','Under the clock: the Wi-Fi you are on, and your public IP with its place (city, region, postcode, country and provider), with the VPN on or off. The place is looked up with a free IP service (ipwho.is, then ipapi.co), which sees your IP address. An IP lookup gives the area of your provider, not a street address.',tog('showNet'))}
+  ${row('Privacy quotes','A privacy quote under the network card on the start page. It changes every ten seconds.',tog('showQuotes'))}
   ${row('Date','Show today\'s date beside the clock.',tog('showDate'))}
   ${row('Scene','A picture along the bottom of the start page, behind everything. Auto changes with the time of day: dawn, day, dusk and a starry night. It never blocks taps and follows light or dark theme.',sel('scene',[['off','Off'],['auto','Auto (follows the clock)'],['ocean','Ocean'],['field','Field'],['city','City']]))}
   ${row('Red glow background','Soft accent glow behind the logo.',tog('glow'))}
@@ -1502,13 +1590,13 @@ function renderPrefs(t,hash){
   ${row('Reset all settings','Back to the red Festers defaults. Vault, bookmarks and notes are kept.',btn('resetset','Reset','bad'))}
   ${row('Clear history when closing','Wipes browsing history when the app is closed.',tog('clearOnExit'))}
   ${row('Scorch','Close all tabs, clear history and lock the vault in one go.',btn('scorch','Open Scorch','bad'))}
-  ${row('Burn','Everything at once: tabs, tab groups, history, cookies, site data, cache and the saved session, with flames.',btn('burn','Burn','bad'))}
   ${row('Kill Switch','Instant clean-up of browser activity: tabs, history, cookies, cache and the downloads list. The vault, bookmarks and settings are kept.',btn('kill','Kill Switch','bad'))}
-  ${row('Blaze','The total wipe. Erases all data including the vault and resets every setting. Asks twice and needs you to type BLAZE.',btn('blaze','Blaze','bad'))}`,
+  ${row('Blaze','Pick what to erase (tabs, groups, history, cookies, site data, cache, saved session; this was Burn), or wipe everything including the vault and reset every setting. The total wipe asks twice and needs you to type BLAZE.',btn('blaze','Blaze','bad'))}`,
  access:`<h2>Accessibility</h2>
   ${row('Reduced motion','Disable dashboard tile animation, glow pulsing and most decorative transitions.',tog('reducedMotion'))}
   ${row('Interface size','Scale the whole browser.',sel('uiScale',[[90,'Small'],[100,'Normal'],[112,'Large'],[125,'Extra large']],true))}
   ${row('Reduce motion','Turn off animations and transitions.',tog('reduceMotion'))}
+  ${row('Tab Sleep','A tab you have not opened for 15 minutes is put to sleep to free memory. It shows a snowflake Zzz and reloads when you tap it. Scroll position and unsent text on that page are lost. Nothing sleeps while the phone is playing audio.',tog('tabSleep'))}
   ${row('Edge loading line','While a page loads, two glowing lines run round the edge of the screen.',tog('edgeLoader'))}
   ${row('Side rail labels','Show names under the right-hand icons.',tog('railLabels'))}
   ${row('Dark Pages','Invert colours of embedded pages for night reading.',`<label class="sw"><input type="checkbox" data-ext="darkpage" ${extOn('darkpage')?'checked':''}><span></span></label>`)}`,
@@ -1533,9 +1621,8 @@ function renderPrefs(t,hash){
   ${row('NoScript','Block scripts in pages. Allow single sites from the menu.',tog('noscript'))}
   ${row('Vault','Master password, fingerprint, PIN and encrypted backups.',btn('openvault','Open'))}
   ${row('Scorch','Close all tabs, clear history and lock the vault in one go.',btn('scorch','Open Scorch'))}
-  ${row('Burn','Everything at once, with fire: tabs, tab groups, history, cookies, site data, cache and the saved session.',btn('burn','Burn','bad'))}
   ${row('Kill Switch','Instant clean-up of browser activity: tabs, history, cookies, cache and the downloads list. The vault, bookmarks and settings are kept.',btn('kill','Kill Switch','bad'))}
-  ${row('Blaze','The total wipe. Erases all data including the vault and resets every setting. Asks twice and needs you to type BLAZE.',btn('blaze','Blaze','bad'))}
+  ${row('Blaze','Pick what to erase (tabs, groups, history, cookies, site data, cache, saved session; this was Burn), or wipe everything including the vault and reset every setting. The total wipe asks twice and needs you to type BLAZE.',btn('blaze','Blaze','bad'))}
   <h3 style="margin:18px 0 8px">Tools</h3><div id="scon"></div>`,
  lock:`<h2>Browser Lock</h2>
   ${row('Browser lock',lkEnabled()?'On. A 4-digit PIN is set'+(lkBio()?' and your fingerprint opens it too.':'.'):'Off. Set a 4-digit PIN to turn it on.',btn('lkpin',lkEnabled()?'Change PIN':'Set PIN'))}
@@ -1561,9 +1648,8 @@ function renderPrefs(t,hash){
   ${row('Clear history when closing','Wipes browsing history when the app is closed.',tog('clearOnExit'))}
   ${row('Clear history now',`${H.length} pages saved.`,btn('clrhist','Clear history','bad'))}
   ${row('Scorch','Close all tabs, clear history and lock the vault in one go.',btn('scorch','Open Scorch'))}
-  ${row('Burn','Everything at once: tabs, tab groups, history, cookies, site data, cache and the saved session, with flames.',btn('burn','Burn','bad'))}
   ${row('Kill Switch','Instant clean-up of browser activity: tabs, history, cookies, cache and the downloads list. The vault, bookmarks and settings are kept.',btn('kill','Kill Switch','bad'))}
-  ${row('Blaze','The total wipe. Erases all data including the vault and resets every setting. Asks twice and needs you to type BLAZE.',btn('blaze','Blaze','bad'))}`,
+  ${row('Blaze','Pick what to erase (tabs, groups, history, cookies, site data, cache, saved session; this was Burn), or wipe everything including the vault and reset every setting. The total wipe asks twice and needs you to type BLAZE.',btn('blaze','Blaze','bad'))}`,
  vault:`<h2>Vault, Notes &amp; Secrets</h2>
   <button class="ntlaunch" data-act="openvault">${ic('key',22)}<span><b>Password vault</b><small>${vaultStateText()}</small></span></button>
   <button class="ntlaunch" data-act="opennotes">${ic('note',22)}<span><b>Notepad</b><small>${LS.get('notes',[]).length} notes on this device</small></span></button>
@@ -1621,6 +1707,7 @@ downloads:`<h2>Downloads &amp; Files</h2>
   ${row('Install downloaded apps','Android makes you allow this yourself: Festers needs the "Install unknown apps" permission to open an .apk you downloaded. '+(FST.canInstall===true?'Allowed now.':FST.canInstall===false?'Not allowed yet.':'Status shows in the installed app.'),btn('instperm',FST.canInstall?'Manage':'Allow'))}
   ${row('Confirm before installing','Always ask before handing an .apk to the Android installer.',tog('dlConfirm'))}
   ${row('Warn about risky files','Ask first when saving .apk, .exe, .sh, .bat, .jar and similar files.',tog('dlWarn'))}
+  ${row('Save finished downloads to Downloads','When a download finishes, copy it into the phone Downloads folder right away. Off keeps it only inside Festers until you tap Save to Downloads or Save as.',tog('dlAuto'))}
   ${row('Ask before every download','Show a confirmation before media or files are saved.',tog('dlAsk'))}
   ${row('Wi-Fi only downloads','Do not download over mobile data.',tog('dlWifi'))}
   ${row('Extract zips into their own folder','Off puts the files straight into Downloads/Festers.',tog('dlOwn'))}
@@ -1687,7 +1774,7 @@ async function prefsClick(e,t){
  else if(a==='openhist')openInternal('about:history');
  else if(a==='clrhist'){if(await confirmBox('Delete all browsing history?','Delete')){H=[];LS.set('history',H);renderPrefs(t,t.prefSec)}}
  else if(a==='scorch')scorchDialog();
- else if(a==='burn')burnDialog();else if(a==='kill')killSwitch();else if(a==='blaze')blazeDialog();
+ else if(a==='kill')killSwitch();else if(a==='blaze')blazeDialog();
  else if(a==='openvault')openPanel('vault',true);
  else if(a==='opennotes')openPanel('notes',true);
  else if(a==='opensx')openPanel('sx',true);
@@ -1832,13 +1919,30 @@ function showSugg(v){
 sugg.addEventListener('click',e=>{const s=e.target.closest('.sg');if(!s)return;hideSugg();addrIn.blur();if(s.dataset.ai){openPanel('ai',true);aiSend(s.dataset.ai);return}nav(curTab(),s.dataset.q,{user:true})});
 
 /* ---------- toolbar + menu ---------- */
-$('#newtab').innerHTML=ic('plus',18);$('#bBack').innerHTML=ic('back');$('#bFwd').innerHTML=ic('fwd');$('#bReload').innerHTML=ic('reload');$('#bHome').innerHTML=ic('home');$('#bMenu').innerHTML=ic('menu');
+$('#newtab').innerHTML=ic('plus',18);$('#closeall').innerHTML=ic('closeall',18);$('#closeall').onclick=()=>closeAllAsk();$('#bBack').innerHTML=ic('back');$('#bFwd').innerHTML=ic('fwd');$('#bReload').innerHTML=ic('reload');$('#bHome').innerHTML=ic('home');$('#bMenu').innerHTML=ic('menu');
 $('#newtab').onclick=()=>newTab('about:newtab');
 // One handler per toolbar control: navigate the active tab's tracked/native history.
 $('#bBack').onclick=()=>{const t=curTab();if(t&&isNat(t)&&t.nb){t.pend='b';clearTimeout(t.pendT);t.pendT=setTimeout(()=>{t.pend=null},2500);FBW().back({id:t.id});return}if(t&&t.pos>0){t.pos--;t.userNav=false;load(t);return}};
 $('#bFwd').onclick=()=>{const t=curTab();if(t&&isNat(t)&&t.nf){t.pend='f';clearTimeout(t.pendT);t.pendT=setTimeout(()=>{t.pend=null},2500);FBW().forward({id:t.id});return}if(t&&t.pos<t.hist.length-1){t.pos++;t.userNav=false;load(t);return}if(!NAT)window.history.forward()};
 $('#bEng').onclick=e=>{e.preventDefault();engPicker()};
 function rlSync(){const b=$('#bReload'),t=curTab();if(!b)return;const on=!!(t&&t.native&&t.loading);try{fbLoad(on)}catch(_){}if(b.classList.contains('ld')===on&&b._st===on)return;b._st=on;b.classList.toggle('ld',on);b.innerHTML=ic(on?'close':'reload');b.title=on?'Stop':'Reload';b.setAttribute('aria-label',b.title)}
+/* V1.27.7: Tab Sleep. A background web tab untouched for tabSleepMin minutes (15) is closed natively to free memory and marked asleep (snowflake Zzz on the tab).
+   Tapping it reloads the page (the same lazy path restored tabs use). Skipped: the tab you are on, loading tabs, burner tabs, pinned tabs, and everything while the phone is playing audio. Scroll position and typed text are lost. */
+function tabSleepNow(t){
+ if(!t||t.id===cur||!t.native||t.loading||t.priv||t.pin||t.pinned||t.asleep)return false;
+ const u=t.hist[t.pos];if(!u||!isWeb(u))return false;
+ try{FBW().close({id:t.id})}catch(e){return false}
+ t.native=false;t.loading=false;t.lazy=true;t.asleep=true;t.nb=false;t.nf=false;t.el.innerHTML='';
+ return true}
+async function tabSleepSweep(){
+ if(!NAT||S.tabSleep===false)return;
+ const lim=(+S.tabSleepMin||15)*60000,now=Date.now();
+ const due=tabs.filter(t=>t.id!==cur&&t.native&&!t.loading&&!t.priv&&!t.asleep&&now-(t.lastUse||now)>lim);
+ if(!due.length)return;
+ try{const r=await FBW().musicActive();if(r&&r.on)return}catch(e){}
+ let n=0;due.forEach(t=>{if(tabSleepNow(t))n++});
+ if(n){renderTabs();saveSession();try{nsSched()}catch(e){}}}
+setInterval(tabSleepSweep,60000);
 function stopLoad(){const t=curTab();if(!t||!t.native)return;t.loading=false;try{FBW().stop({id:t.id})}catch(_){}const b=$('.nbar',t.el);if(b){b.style.width='100%';setTimeout(()=>{b.style.width='0'},300)}try{fbLoad(false)}catch(_){}rlSync();toast('Stopped')}
 $('#bReload').onclick=()=>{const t=curTab();if(t&&t.native&&t.loading){stopLoad();return}if(isNat(t)){FBW().reload({id:t.id});return}if(t){t.userNav=false;load(t)}};
 $('#bHome').onclick=()=>nav(curTab(),homeUrl(),{user:true});
@@ -1979,7 +2083,7 @@ function buildMenu(){
  const extBody=(exts.length||mgOn)?(mgOn?mi('mgrab','dl','Download media',null,!web):'')+exts.map(x=>`<button class="mi" data-ext="${esc(x.id)}" ${web?'':'disabled'}>${ic('puzzle',19)}<span>${esc(x.name)}</span></button>`).join('')+mi('manageext','gear','Manage extensions'):'<p class="mu" style="padding:8px 10px;margin:0">No extensions enabled.</p>'+mi('manageext','gear','Manage extensions');
  $('#menu').innerHTML=profileChip()+'<div class="qrow">'+qb('back','back','Back',!t||(t.pos<=0&&!(isNat(t)&&t.nb)))+qb('fwd','fwd','Forward',!t||(t.pos>=t.hist.length-1&&!(isNat(t)&&t.nf)))+qb('reload','reload','Reload')+qb('home','home','Home')+'</div><div class="qrow">'+qb('bm','bookmark','Bookmarks')+qb('hist','clock','History')+qb('dl','dl','Downloads')+qb('settings','gear','Settings')+'</div><div class="mgrid">'+qb('newtab','plus','New tab')+qb('private','mask','Burner')+qb('addsc','star','Add shortcut',!web)+qb('savepg','dl','Save page',!web)+qb('share','ext','Share',!web)+qb('find','search','Find',!web)+'</div><div class="hr"></div>'+
  grp('page','Page','globe',
-  mi('site','sliders','Site controls',null,!web)+mi('cookies','shield','Cookies',S.cookies==='none'?'Blocked':S.cookies==='third'?'3rd-party blocked':'',!web)+mi('recent','recent','Recent tabs')+mi('closeall','close','Close all tabs',String(tabs.length))+mi('closeoth','close','Close other tabs',null,tabs.length<2)+mi('zoom','zoom','Zoom',t&&t.zoom&&t.zoom!==1?Math.round(t.zoom*100)+'%':'',!web)+
+  mi('site','sliders','Site controls',null,!web)+mi('cookies','shield','Cookies',S.cookies==='none'?'Blocked':S.cookies==='third'?'3rd-party blocked':'',!web)+mi('tabmgr','tabsq','All tabs',String(tabs.length))+mi('recent','recent','Recent tabs')+mi('closeall','close','Close all tabs',String(tabs.length))+mi('closeoth','close','Close other tabs',null,tabs.length<2)+mi('zoom','zoom','Zoom',t&&t.zoom&&t.zoom!==1?Math.round(t.zoom*100)+'%':'',!web)+
   mi('find','search','Find in page',null,!web)+mi('fill','key','Fill login from vault',null,!web)+mi('translate','translate','Translate…',null,!web)+mi('reader','reader','Show reading mode',null,!web)+(mgOn?mi('mgrab','dl','Download media',null,!web):'')+
   mi('install','install','Install and create shortcut',null,!web)+ck('desktop','desktop','Desktop site',S.desktop,!web)+
   mi('dark','eye','Dark Pages',extOn('darkpage')?'On':'Off')+(S.noscript&&web?mi('nsite','shield','Scripts on this site',scriptAllowed(host(u))?'Allowed':'Blocked'):'')+
@@ -1987,7 +2091,7 @@ function buildMenu(){
  grp('tools','Tools','tools',mi('ai','groq','Groq AI chat')+mi('gsum','reader','Summarize page with Groq',null,!web)+mi('gpriv','shield','Privacy check with Groq',null,!web)+mi('tb','tools','Toolbox')+mi('cleanlink','link','Copy clean link',null,!web)+mi('shield','shield','Shields',shieldOn()?(t&&t.shield?t.shield.n+' blocked':'On'):'Off')+mi('sec','shield','Security center')+mi('media','play','Media player'))+
  grp('bms','Bookmarks','bookmark',bmMenuBody(),B.length)+
  grp('ext','Extensions','puzzle',extBody,exts.length+(mgOn?1:0))+
- grp('view','Data and view','trash',mi('delbd','trash','Delete browsing data')+mi('scorch','flame','Scorch')+mi('burn','flame','Burn')+mi('kill','bolt','Kill Switch')+mi('blaze','blaze','Blaze')+mi('tbpos','sliders',S.tbPos==='bottom'?'Move toolbar to top':'Move toolbar to bottom')+mi('togtop','eye',S.topbar==='hidden'?'Show top bar':'Hide top bar')+mi('tograil','eye',S.showRail===false?'Show bottom bar':'Hide bottom bar'))+
+ grp('view','Data and view','trash',mi('delbd','trash','Delete browsing data')+mi('scorch','flame','Scorch')+mi('kill','bolt','Kill Switch')+mi('blaze','blaze','Blaze')+mi('tbpos','sliders',S.tbPos==='bottom'?'Move toolbar to top':'Move toolbar to bottom')+mi('togtop','eye',S.topbar==='hidden'?'Show top bar':'Hide top bar')+mi('tograil','eye',S.showRail===false?'Show bottom bar':'Hide bottom bar'))+
  '<div class="hr"></div>'+mi('settings','gear','Settings')+mi('help','help','Help and feedback')+mi('about','info','About');
 }
 $('#menu').addEventListener('click',e=>{
@@ -2025,14 +2129,15 @@ function menuAct(a){
  else if(a==='vault')openPanel('vault',true);
  else if(a==='notes')openPanel('notes',true);
  else if(a==='bm')openPanel('bm',true);
- else if(a==='hist')openInternal('about:history');
+ else if(a==='hist')openPanel('hist',true);
  else if(a==='dark'){const s=extState();s.darkpage=!extOn('darkpage');LS.set('ext',s);applyPrefs();toast('Dark Pages '+(s.darkpage?'on':'off'))}
  else if(a==='external'){if(isWeb(u))openExternal(u);else toast('Nothing to open')}
  else if(a==='copyurl'){if(isWeb(u))copyText(u);else toast('Nothing to copy')}
  else if(a==='addsc'){if(isWeb(u)){if(SC.some(s=>s.u===u))return toast('Already a shortcut');SC.push({t:host(u),u});LS.set('shortcuts',SC);toast('Added to start page shortcuts')}}
  else if(a==='addcol')addToCollection();
  else if(a==='savepg'){if(isWeb(u)){toast('Saving page…');savePage(u).then(r=>toast('Saved offline: '+r.title.slice(0,30))).catch(e=>toast('Could not save: '+e.message))}}
- else if(a==='share'){if(isWeb(u)){if(navigator.share)navigator.share({title:host(u),url:u}).catch(()=>{});else copyText(u)}}
+ else if(a==='share')shareCur();
+ else if(a==='tabmgr')tmShow();
  else if(a==='dl'){openPanel('dl',true)}
  else if(a==='tbpos'){setS('tbPos',S.tbPos==='bottom'?'top':'bottom');toast('Toolbar at the '+S.tbPos)}
  else if(a==='back')$('#bBack').click();
@@ -2056,14 +2161,14 @@ function menuAct(a){
  else if(a==='manageext')openInternal('about:preferences#ext');
  else if(a==='help')helpDialog();
  else if(a==='scorch')scorchDialog();
- else if(a==='burn')burnDialog();else if(a==='kill')killSwitch();else if(a==='blaze')blazeDialog();
+ else if(a==='kill')killSwitch();else if(a==='blaze')blazeDialog();
  else if(a==='settings')openInternal('about:preferences');
  else if(a==='about')openInternal('about:about');
 }
 
 /* ---------- rail ---------- */
 var VW={on:false,eye:S.viewEye!==false,busy:false,tall:false,H:[]};
-const RAIL={dl:['dl','Downloads'],ai:['ai','LLM'],view:['view','View'],vault:['key','Vault'],notes:['note','Notes'],media:['play','Media'],sec:['shield','Security'],bm:['bookmark','Bookmarks'],scorch:['flame','Scorch'],sx:['lock','Secrets'],col:['bookmark','Sets'],settings:['gear','Settings']};
+const RAIL={hist:['clock','History'],dl:['dl','Downloads'],ai:['ai','LLM'],view:['view','View'],vault:['key','Vault'],notes:['note','Notes'],media:['play','Media'],sec:['shield','Security'],bm:['bookmark','Bookmarks'],scorch:['flame','Scorch'],sx:['lock','Secrets'],col:['bookmark','Sets'],settings:['gear','Settings']};
 $$('#rail .rb').forEach(b=>{const r=RAIL[b.dataset.p];b.innerHTML=ic(r[0],22)+'<span>'+r[1]+'</span>'});
 $('#rail').addEventListener('click',e=>{
  const b=e.target.closest('.rb');if(!b)return;const p=b.dataset.p;
@@ -2071,6 +2176,7 @@ $('#rail').addEventListener('click',e=>{
  else if(p==='ai'||p==='media'||p==='sec'||p==='sx'||p==='col'||p==='dl')openPanel(p);
  else if(p==='vault'||p==='notes')openPanel(p);
  else if(p==='bm')openPanel('bm');
+ else if(p==='hist')openPanel('hist');
  else if(p==='scorch')scorchDialog();
  else if(p==='settings')openInternal('about:preferences');
 });
@@ -2201,22 +2307,22 @@ async function closeAllAsk(){const n=tabs.length;if(!await confirmBox('Close all
 async function closeOthersAsk(){const keep=curTab();if(!keep||tabs.length<2)return;const n=tabs.length-1;if(!await confirmBox('Close the other '+n+' tab'+(n===1?'':'s')+'?','Close others'))return;tabs.filter(t=>t.id!==keep.id).forEach(t=>{rcAdd(t);try{if(NAT&&t.native)FBW().close({id:t.id})}catch(e){}t.el.remove()});tabs=[keep];renderTabs();syncBar();saveSession();syncNative();toast('Other tabs closed')}
 function closeAllTabs(){tabs.slice().forEach(t=>{try{if(NAT&&t.native)FBW().close({id:t.id})}catch(e){}t.el.remove()});tabs=[];cur=null;newTab('about:newtab')}
 function scorchDialog(){
- modal('Scorch',`<p class="mu" style="margin-top:0">Pick what to scorch.</p><label style="display:flex;gap:10px;margin:8px 0"><input type="checkbox" id="f1" checked> Close all tabs</label><label style="display:flex;gap:10px;margin:8px 0"><input type="checkbox" id="f2" checked> Clear browsing history</label><label style="display:flex;gap:10px;margin:8px 0"><input type="checkbox" id="f3" checked> Lock the vault</label>${fxPrevHtml()}<div class="hr"></div><button class="btn bad sm" id="goburn" style="width:100%">Burn everything instead…</button>`,[{label:'Cancel'},{label:'Scorch',cls:'pri',fn:m=>{
+ modal('Scorch',`<p class="mu" style="margin-top:0">Pick what to scorch.</p><label style="display:flex;gap:10px;margin:8px 0"><input type="checkbox" id="f1" checked> Close all tabs</label><label style="display:flex;gap:10px;margin:8px 0"><input type="checkbox" id="f2" checked> Clear browsing history</label><label style="display:flex;gap:10px;margin:8px 0"><input type="checkbox" id="f3" checked> Lock the vault</label>${fxPrevHtml()}<div class="hr"></div><button class="btn bad sm" id="goburn" style="width:100%">Blaze instead…</button>`,[{label:'Cancel'},{label:'Scorch',cls:'pri',fn:m=>{
   if(fxIsPrev(m)){flameBurst('Scorch',()=>toast('Scorch preview only. Nothing was erased'),true);return}
   if($('#f2',m).checked){H=[];LS.set('history',H);groqClear()}
   if($('#f3',m).checked)vLock();
   if($('#f1',m).checked)closeAllTabs();
   flameBurst('Scorch',()=>toast('Scorched'));
- }}],{open:(m,close)=>{fxPrevBind(m,'Scorch');$('#goburn',m).onclick=()=>{close();burnDialog()}}});
+ }}],{open:(m,close)=>{fxPrevBind(m,'Scorch');$('#goburn',m).onclick=()=>{close();blazeDialog()}}});
 }
 /* V1.14.4: Burn = Scorch plus tab groups, cookies, site data, cache and the saved session. Bookmarks and notes only if ticked. */
-function burnDialog(){
+function blazePickDialog(){
  const L=[['b1','Close every tab, burner windows too',1],['b2','Tab groups (Sets / collections)',1],['b3','Browsing history and Groq chat',1],['b4','Cookies, site data and cache',1],['b5','Saved session and recently closed tabs',1],['b6','Lock the vault',1],['b7','Bookmarks',0],['b8','Notes',0]];
- modal('Burn',`<p class="mu" style="margin-top:0">Burns it all. This cannot be undone.</p>${L.map(r=>`<label style="display:flex;gap:10px;margin:8px 0"><input type="checkbox" id="${r[0]}" ${r[2]?'checked':''}> ${r[1]}</label>`).join('')}${fxPrevHtml()}`,[{label:'Cancel'},{label:'Burn',cls:'pri',fn:async m=>{
-  if(fxIsPrev(m)){flameBurst('Burn',()=>toast('Burn preview only. Nothing was erased'),true);return}
+ modal('Blaze · pick what to erase',`<p class="mu" style="margin-top:0">Erases what you tick. This cannot be undone.</p>${L.map(r=>`<label style="display:flex;gap:10px;margin:8px 0"><input type="checkbox" id="${r[0]}" ${r[2]?'checked':''}> ${r[1]}</label>`).join('')}<div class="hr"></div><button class="btn bad sm" id="bzall" style="width:100%">Total wipe instead…</button>${fxPrevHtml()}`,[{label:'Cancel'},{label:'Blaze',cls:'pri',fn:async m=>{
+  if(fxIsPrev(m)){flameBurst('Blaze',()=>toast('Blaze preview only. Nothing was erased'),true);return}
   const on=k=>$('#'+k,m).checked;
-  if((on('b7')||on('b8'))&&!await confirmBox('Bookmarks or notes are ticked and will be erased for good. Burn anyway?','Burn')) return false;
-  flameBurst('Burn',()=>toast('Burned'),true); /* V1.23.3: flames first, the wipe happens underneath */
+  if((on('b7')||on('b8'))&&!await confirmBox('Bookmarks or notes are ticked and will be erased for good. Blaze anyway?','Blaze')) return false;
+  flameBurst('Blaze',()=>toast('Blazed'),true); /* V1.23.3: flames first, the wipe happens underneath */
   try{
    if(on('b3')){H=[];LS.set('history',H);groqClear()}
    if(on('b2'))LS.set('collections',[]);
@@ -2227,8 +2333,8 @@ function burnDialog(){
    if(on('b4')&&NAT){const snap=lsSnap();try{await FBW().clearData({cookies:true,cache:true})}catch(e){}lsRestore(snap)} /* V1.23.0: sites' data is wiped, the browser's own saved data is never touched */
    mirrorNow();
    if(on('b1'))closeAllTabs();
-  }catch(e){toast('Burn hit a snag: '+(e&&e.message||e))}
- }}],{open:m=>fxPrevBind(m,'Burn')});
+  }catch(e){toast('Blaze hit a snag: '+(e&&e.message||e))}
+ }}],{open:(m,close)=>{fxPrevBind(m,'Blaze');$('#bzall',m).onclick=()=>{close();blazeDialog()}}});
 }
 
 /* ---------- drawer ---------- */
@@ -2237,11 +2343,11 @@ function openPanel(name,force){if(name==='sec'){if(panel)closePanel();openConsol
  if(panel===name&&!force){closePanel();return}if(name==='vault')V.bioAsked=false;panel=name;drawer.className='on';renderDrawer();railSync()}
 function closePanel(){panel=null;drawer.className='';stopTick();railSync()}
 function renderDrawer(){
- const titles={vault:['key','Passwords'],notes:['note','Notepad'],ai:['ai','LLM'],tb:['tools','Toolbox'],media:['play','Media'],sec:['shield','Security Console'],dl:['dl','Downloads'],sx:['lock','Secrets'],col:['bookmark','Collections'],bm:['bookmark','Bookmarks']};const tt=titles[panel];
+ const titles={vault:['key','Passwords'],notes:['note','Notepad'],ai:['ai','LLM'],tb:['tools','Toolbox'],media:['play','Media'],sec:['shield','Security Console'],dl:['dl','Downloads'],sx:['lock','Secrets'],col:['bookmark','Collections'],bm:['bookmark','Bookmarks'],hist:['clock','History']};const tt=titles[panel];
  drawer.innerHTML=`<div class="dh"><b>${ic(tt[0],19)} ${tt[1]}</b><button class="ib" id="dclose" aria-label="Close panel">${ic('close',18)}</button></div><div class="db" id="dbody"></div>`;
  $('#dclose').onclick=closePanel;
  stopTick();
- ({vault:renderVault,notes:renderNotes,ai:renderAI,tb:renderTb,media:renderMedia,sec:renderSec,dl:renderDl,sx:renderSx,col:renderCol,bm:renderBmPanel})[panel]();
+ ({vault:renderVault,notes:renderNotes,ai:renderAI,tb:renderTb,media:renderMedia,sec:renderSec,dl:renderDl,sx:renderSx,col:renderCol,bm:renderBmPanel,hist:renderHistPanel})[panel]();
 }
 drawer.addEventListener('pointerdown',()=>{if(panel==='vault')V.last=Date.now()});
 drawer.addEventListener('keydown',()=>{if(panel==='vault')V.last=Date.now()});
@@ -3809,6 +3915,15 @@ async function dlInit(){
  try{FBW().dlResumeNet()}catch(e){} /* downloads that were running when the app closed, or that lost the connection, continue now */
  addEventListener('online',()=>{try{FBW().dlResumeNet()}catch(e){}});
 }
+const DLAUTO=new Set();
+/* V1.27.12: a download that just finished is copied to the phone Downloads folder, unless Settings > Downloads says not to */
+function dlAutoSave(e,prev){
+ if(!NAT||S.dlAuto===false||!e||e.state!=='completed'||e.saved||e.kept===false)return;
+ if(prev&&prev.state==='completed')return;
+ if(DLAUTO.has(e.id))return;
+ DLAUTO.add(e.id);
+ try{FBW().saveDownload({id:e.id}).then(r=>{toast(r&&r.ok?(r.info||'Saved to Downloads'):((r&&r.desc)||'Could not save to Downloads'))}).catch(()=>{DLAUTO.delete(e.id)})}catch(_){DLAUTO.delete(e.id)}
+}
 function dlOnEvent(e){
  if(!e||e.id==null)return;
  const i=DL.jobs.findIndex(x=>x.id===e.id);
@@ -3816,6 +3931,7 @@ function dlOnEvent(e){
  const prev=i>=0?DL.jobs[i]:null;
  if(i>=0)DL.jobs[i]=e;else DL.jobs.unshift(e);
  dlBadge();
+ dlAutoSave(e,prev);
  if(panel!=='dl'||DL.tab!=='dl')return;
  const row=$(`[data-dj="${e.id}"]`);
  if(row&&prev&&prev.state===e.state){ /* same state: update the numbers in place, no flicker */
@@ -5326,6 +5442,8 @@ function placeMenu(){const m=$('#menu');if(S.tbPos==='bottom'&&S.topbar!=='hidde
 /* ===================== V1.23.8 ===================== */
 /* S.O.I. x Bojack Security: Kill Switch, Scorch, Burn, Blaze, bookmark groups, tab colour groups, privacy sheet, neon loader, vault glow, tracker badge. */
 Object.assign(ICONS,{
+ share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/>',
+ tabsq:'<rect x="4" y="4" width="16" height="16" rx="3.5"/>',
  killsw:'<path d="M12 3v8"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/>',
  burner:'<ellipse cx="5.2" cy="12.4" rx="1.7" ry="2.2" transform="rotate(-22 5.2 12.4)"/><ellipse cx="9.3" cy="7.7" rx="1.7" ry="2.2" transform="rotate(-8 9.3 7.7)"/><ellipse cx="14.7" cy="7.7" rx="1.7" ry="2.2" transform="rotate(8 14.7 7.7)"/><ellipse cx="18.8" cy="12.4" rx="1.7" ry="2.2" transform="rotate(22 18.8 12.4)"/><path d="M12 12.8c-3 0-5.1 3-5.1 4.9 0 1.7 1.8 2.6 5.1 1.6 3.3 1 5.1.1 5.1-1.6 0-1.9-2.1-4.9-5.1-4.9z"/><path fill="currentColor" stroke-width="1" d="M3.7 10.6Q2.6 9.4 2.3 7.6Q4.4 8.3 5.3 10.1Z"/><path fill="currentColor" stroke-width="1" d="M8 5.7Q7.3 4.2 7.6 2.5Q9.3 3.5 9.7 5.5Z"/><path fill="currentColor" stroke-width="1" d="M16 5.7Q16.7 4.2 16.4 2.5Q14.7 3.5 14.3 5.5Z"/><path fill="currentColor" stroke-width="1" d="M20.3 10.6Q21.4 9.4 21.7 7.6Q19.6 8.3 18.7 10.1Z"/>',
  bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
@@ -5444,8 +5562,8 @@ function blazeFx(done,real){
  setTimeout(()=>{try{L.end()}catch(e){}},(T+.8)*1000);
 }
 function blazeDialog(){
- modal('Blaze',`<div class="bzhead">${ic('blaze',46)}<b>Blaze</b></div><p class="mu" style="margin:6px 0 10px">Blaze is the total wipe. It erases everything Festers stores on this phone: tabs, history, cookies, cache, downloads list, bookmarks, notes, collections, the vault and every setting. The app then restarts blank, like a fresh install.</p><p class="mu" style="margin:0"><small>Files already saved in Downloads/Festers stay on the phone.</small></p>${fxPrevHtml()}`,
- [{label:'Close'},{label:'Blaze now',cls:'bad',fn:m=>{if(fxIsPrev(m)){setTimeout(()=>blazeFx(()=>toast('Blaze preview only. Nothing was erased'),false),60);return}setTimeout(blazeConfirm,60)}}],{open:m=>fxPrevBind(m,'Blaze now')});
+ modal('Blaze',`<div class="bzhead">${ic('blaze',46)}<b>Blaze</b></div><p class="mu" style="margin:6px 0 10px">Blaze is the total wipe. It erases everything Festers stores on this phone: tabs, history, cookies, cache, downloads list, bookmarks, notes, collections, the vault and every setting. The app then restarts blank, like a fresh install.</p><p class="mu" style="margin:0"><small>Files already saved in Downloads/Festers stay on the phone.</small></p><div class="hr"></div><button class="btn sm" id="bzpick" style="width:100%">Pick what to erase instead…</button>${fxPrevHtml()}`,
+ [{label:'Close'},{label:'Blaze now',cls:'bad',fn:m=>{if(fxIsPrev(m)){setTimeout(()=>blazeFx(()=>toast('Blaze preview only. Nothing was erased'),false),60);return}setTimeout(blazeConfirm,60)}}],{open:(m,close)=>{fxPrevBind(m,'Blaze now');$('#bzpick',m).onclick=()=>{close();blazePickDialog()}}});
 }
 async function blazeConfirm(){
  if(!await confirmBox('Are you sure? Blaze erases ALL your data, including the vault, and resets every setting. This cannot be undone.','Yes, continue'))return;
@@ -5487,30 +5605,30 @@ async function blazeRun(){
  setTimeout(wipe,1400); /* the wipe happens under the flames */
 }
 
-/* ---------- Kill Switch / Scorch / Burn / Blaze tiles under the clock ---------- */
+/* ---------- Kill Switch / Scorch / Blaze tiles under the clock (V1.27.7: Burn now lives inside Blaze) ---------- */
 function zoneHtml(){
  return '';
  const z=(k,i,l,c)=>`<button class="zb ${c}" data-zk="${k}" aria-label="${l}"><i>${ic(i,21)}</i><span>${l}</span></button>`;
- return `<div class="ntzone">${z('kill','bolt','Kill Switch','zks')}${z('scorch','flame','Scorch','zsc')}${z('burn','flame','Burn','zbu')}${z('blaze','blaze','Blaze','zbz')}</div>`;
+ return `<div class="ntzone">${z('kill','bolt','Kill Switch','zks')}${z('scorch','flame','Scorch','zsc')}${z('blaze','blaze','Blaze','zbz')}</div>`;
 }
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-zk]');if(!b)return;
  e.preventDefault();e.stopPropagation();
  const k=b.dataset.zk;
- if(k==='kill')killSwitch();else if(k==='scorch')scorchDialog();else if(k==='burn')burnDialog();else if(k==='blaze')blazeDialog();
+ if(k==='kill')killSwitch();else if(k==='scorch')scorchDialog();else if(k==='blaze')blazeDialog();
 },true);
 
 
-/* ---------- V1.23.9: swipe up on the bottom bar for Kill Switch, Burn, Scorch, Blaze and the Burner window ---------- */
+/* ---------- V1.23.9: swipe up on the bottom bar for Kill Switch, Scorch, Blaze and the Burner window ---------- */
 (()=>{
  const sh=$('#ksheet'),box=$('#kitems');if(!sh||!box)return;
- const ITEMS=[['kill','killsw','Kill Switch','Instant clean-up. Asks you to approve first.'],['burn','flame','Burn','Scorch plus cookies, site data, cache and the saved session.'],['scorch','flame','Scorch','Close all tabs, clear history and lock the vault.'],['blaze','blaze','Blaze','Total wipe, including the vault. Asks twice.'],['burner','burner','Burner window','Opens a private window that keeps nothing.']];
+ const ITEMS=[['kill','killsw','Kill Switch','Instant clean-up. Asks you to approve first.'],['scorch','flame','Scorch','Close all tabs, clear history and lock the vault.'],['blaze','blaze','Blaze','Pick what to erase, or wipe everything. The total wipe asks twice.'],['burner','burner','Burner window','Opens a private window that keeps nothing.']];
  box.innerHTML=ITEMS.map(x=>`<button class="kit" data-k="${x[0]}"><i>${ic(x[1],22)}</i><span><b>${x[2]}</b><small>${x[3]}</small></span></button>`).join('');
  const open=()=>{sh.classList.add('on');sh.setAttribute('aria-hidden','false');try{nsSched()}catch(e){}};
  const close=()=>{sh.classList.remove('on');sh.setAttribute('aria-hidden','true');try{nsSched()}catch(e){}};
  sh.querySelector('.kbg').onclick=close;
  box.addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;close();
-  setTimeout(()=>{if(k==='kill')killSwitch();else if(k==='burn')burnDialog();else if(k==='scorch')scorchDialog();else if(k==='blaze')blazeDialog();else if(k==='burner')newTab('about:newtab',{priv:true})},120)});
+  setTimeout(()=>{if(k==='kill')killSwitch();else if(k==='scorch')scorchDialog();else if(k==='blaze')blazeDialog();else if(k==='burner')newTab('about:newtab',{priv:true})},120)});
  let y0=0,x0=0,on=false;const rail=$('#rail');
  rail.addEventListener('touchstart',e=>{const t=e.touches[0];y0=t.clientY;x0=t.clientX;on=true},{passive:true});
  rail.addEventListener('touchend',e=>{if(!on)return;on=false;const t=e.changedTouches[0],dy=t.clientY-y0,dx=t.clientX-x0;if(dy<-28&&Math.abs(dy)>Math.abs(dx)*1.2){open();const c=e=>{e.stopPropagation();e.preventDefault()};rail.addEventListener('click',c,{capture:true,once:true});setTimeout(()=>rail.removeEventListener('click',c,true),400)}},{passive:true});
@@ -5524,7 +5642,7 @@ function privacySheet(){
  <p><b>Your IP address.</b> Your IP address is the number that tells every website where to send its answer. It points to your internet provider and roughly to your town, and it is logged by every site, advert network and Wi-Fi hotspot you touch. It lets companies link your visits into one profile and lets attackers find your network, probe it for weak devices, flood it with junk traffic or pick targets for scams. On public Wi-Fi anyone on the same network can watch unprotected traffic. A VPN, HTTPS-only mode and tracker blocking shrink what is exposed.</p>
  <p><b>The risk from hackers.</b> Most attacks are not clever, they are patient. Phishing pages copy real sign-in screens. Data breaches leak passwords that criminals try on your other accounts, so one reused password can open ten doors. Malicious downloads, fake updates and booby-trapped ads install spyware. Stolen session cookies can hand over a logged-in account without the password. Once an attacker has your email, they can reset almost everything else.</p>
  <p><b>Your digital footprint.</b> Your footprint is everything you leave behind: history, cookies, device fingerprints, accounts, photos, location tags and the data brokers who buy and resell all of it. It is hard to delete, it lasts for years, and it feeds identity theft, targeted scams, price discrimination and profiling that you never agreed to. The smaller the footprint, the less there is to steal, sell or use against you.</p>
- <p><b>What Festers does about it.</b> Shields block trackers, the Burner window leaves nothing behind, the Vault keeps passwords encrypted on this phone, and the Kill Switch, Scorch, Burn and Blaze wipe your trail at four strengths. Use a unique password for every site, switch on passkeys, keep the phone updated and think before you tap a link. <i>Strategy Over Impulse.</i></p>
+ <p><b>What Festers does about it.</b> Shields block trackers, the Burner window leaves nothing behind, the Vault keeps passwords encrypted on this phone, and the Kill Switch, Scorch and Blaze wipe your trail at three strengths. Use a unique password for every site, switch on passkeys, keep the phone updated and think before you tap a link. <i>Strategy Over Impulse.</i></p>
  <p class="mu" style="text-align:center;margin-bottom:0"><small>Bojack Security on duty. S.O.I. 999</small></p></div>`,[{label:'Got it',cls:'pri'}]);
 }
 (()=>{
@@ -5628,6 +5746,105 @@ function fbLoad(on){ /* V1.27.6: in the installed app the loading line is a glow
  const line=document.createElement('div');line.id='fbline';document.body.appendChild(line);
  const paw=document.createElement('span');paw.id='fbpaw';paw.setAttribute('aria-hidden','true');paw.innerHTML=ic('paw',16);
  const st=$('#bStar');if(st&&st.parentNode)st.parentNode.insertBefore(paw,st);
+ const sp=document.createElement('button');sp.type='button';sp.id='fbstop';sp.title='Stop';sp.setAttribute('aria-label','Stop loading');sp.innerHTML=ic('close',16);sp.onclick=e=>{e.preventDefault();e.stopPropagation();try{stopLoad()}catch(_){}};if(st&&st.parentNode)st.parentNode.insertBefore(sp,st);
+})();
+
+/* ---------- V1.27.9: History panel, tab manager, Share ---------- */
+const HP={q:'',n:200};
+function histDayLabel(t){const d=new Date(t),n=new Date(),a=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),b=new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime(),k=Math.round((b-a)/864e5);return k===0?'Today':k===1?'Yesterday':d.toDateString()}
+function renderHistPanel(){
+ const el=$('#dbody');if(!el)return;
+ el.innerHTML=`<div class="hpbar"><input class="in" id="hpq" placeholder="Search history" value="${esc(HP.q)}" autocapitalize="off" autocomplete="off" aria-label="Search history"><button class="btn bad sm" id="hpclr">Clear all</button></div><p class="hpsum" id="hps"></p><div id="hpl"></div>`;
+ const draw=()=>{
+  const q=HP.q.trim().toLowerCase(),all=H.filter(h=>h&&h.url&&(!q||((h.url||'')+' '+(h.title||'')).toLowerCase().includes(q))),list=all.slice(0,HP.n);
+  let day='',html='';
+  list.forEach(h=>{const dl=histDayLabel(h.t);if(dl!==day){day=dl;html+=`<div class="hpd">${esc(dl)}</div>`}
+   let tm='';try{tm=new Date(h.t).toTimeString().slice(0,5)}catch(e){}
+   html+=`<div class="hpi"><span class="hf">${isWeb(h.url)?favImg(h.url):mascot(18)}</span><div class="hm" data-hg="${esc(h.url)}"><b>${esc(h.title||h.url)}</b><small>${esc(h.url)}</small></div><span class="ht">${tm}</span><button class="hx" data-hd="${esc(String(h.t))}" aria-label="Remove from history">${ic('close',15)}</button></div>`});
+  if(all.length>list.length)html+=`<div class="acts" style="margin:12px 0"><button class="btn sm" id="hpmore">Show more (${all.length-list.length} left)</button></div>`;
+  $('#hpl',el).innerHTML=html||`<p class="mu" style="text-align:center;padding:28px 8px">${q?'No matches.':'Nothing here yet. Pages you visit show up here.'}</p>`;
+  $('#hps',el).textContent=H.length?`${all.length} of ${H.length} ${H.length===1?'page':'pages'}`:'';
+ };
+ draw();
+ $('#hpq',el).oninput=e=>{HP.q=e.target.value;HP.n=200;draw()};
+ $('#hpclr',el).onclick=async()=>{if(!H.length)return toast('History is already empty');if(await confirmBox('Delete all browsing history?','Delete')){H=[];LS.set('history',H);draw()}};
+ el.onclick=e=>{
+  const m=e.target.closest('#hpmore');if(m){HP.n+=200;draw();return}
+  const d=e.target.closest('[data-hd]');if(d){const k=d.dataset.hd;H=H.filter(h=>String(h.t)!==k);LS.set('history',H);draw();return}
+  const g=e.target.closest('[data-hg]');if(g){const u=g.dataset.hg;closePanel();try{nav(curTab(),u,{user:true})}catch(er){newTab(u)}}
+ };
+}
+function tabBadge(){
+ const n=tabs.length,txt=n>99?'99+':String(n),b=$('#tabsbtn b');
+ if(b&&b.textContent!==txt)b.textContent=txt;
+ const t=$('#tmt');if(t&&$('#tabmgr.on'))t.innerHTML=`<em>${n}</em> open ${n===1?'tab':'tabs'}`;
+}
+function tmRender(){
+ const g=$('#tmg');if(!g)return;
+ if(!tabs.length){g.innerHTML='<div class="tme">No tabs open.</div>';tabBadge();return}
+ g.innerHTML='<div class="tmhint">Tap to open · swipe a card sideways to close it</div>'+tabs.map(t=>{
+  const u=t.hist[t.pos]||'',web=isWeb(u);
+  const icon=t.priv?ic('burner',18):web?favImg(u):mascot(20);
+  const sub=t.priv?'<span class="tmb">BURNER WINDOW</span>':t.asleep?'<span class="tmz">❄ Zzz</span> <small>sleeping · tap to wake</small>':`<small>${esc(web?host(u):(u==='about:newtab'?'Start page':u))}</small>`;
+  const gn=t.col&&t.gn?`<small style="color:${t.col};font-weight:800">${esc(t.gn)}</small>`:'';
+  return `<div class="tmc ${t.id===cur?'on':''} ${t.asleep?'asleep':''}" data-id="${t.id}" ${t.col?`style="--tc:${t.col}"`:''}><div class="tmr"><span>${icon}</span><span class="tmt">${esc(t.title||u||'New tab')}</span><button class="tmx" data-tx="${t.id}" aria-label="Close tab">${ic('close',14)}</button></div>${sub}${gn}</div>`;
+ }).join('');
+ tabBadge();
+}
+function tmClose(id){
+ try{closeTab(id)}catch(e){}
+ if($('#tabmgr.on')){tmRender();try{syncNative()}catch(e){}}
+}
+function tmHide(){const m=$('#tabmgr');if(m)m.classList.remove('on');try{nsSched()}catch(e){}try{syncNative()}catch(e){}}
+function tmShow(){
+ let m=$('#tabmgr');
+ if(!m){
+  m=document.createElement('div');m.id='tabmgr';m.setAttribute('role','dialog');m.setAttribute('aria-label','Open tabs');
+  m.innerHTML=`<div class="tmh"><b id="tmt"></b><button class="btn sm pri" id="tmnew">${ic('plus',15)} New tab</button><button class="btn sm bad" id="tmall">Close all</button><button class="ib" id="tmx" aria-label="Close tab manager">${ic('close',18)}</button></div><div class="tmg" id="tmg"></div>`;
+  document.body.appendChild(m);
+  $('#tmx',m).onclick=tmHide;
+  $('#tmnew',m).onclick=()=>{tmHide();newTab('about:newtab')};
+  $('#tmall',m).onclick=async()=>{const n=tabs.length;if(!n)return;if(!await confirmBox('Close all '+n+' tab'+(n===1?'':'s')+'? You can bring some back from Recent tabs.','Close all'))return;try{closeAllTabs()}catch(e){}tmHide()};
+  const g=$('#tmg',m);let drag=null,swiped=0;
+  g.addEventListener('pointerdown',e=>{const c=e.target.closest('.tmc');if(!c||e.target.closest('[data-tx]'))return;drag={c,x:e.clientX,y:e.clientY,dx:0,on:false}});
+  g.addEventListener('pointermove',e=>{
+   if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+   if(!drag.on){if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)*1.4){drag.on=true;try{drag.c.setPointerCapture(e.pointerId)}catch(er){}}else if(Math.abs(dy)>10){drag=null;return}}
+   if(drag.on){drag.dx=dx;drag.c.style.transition='none';drag.c.style.transform=`translateX(${dx}px)`;drag.c.style.opacity=String(Math.max(.25,1-Math.abs(dx)/260))}
+  });
+  const end=()=>{
+   if(!drag)return;const d=drag;drag=null;
+   if(!d.on)return;
+   swiped=1;setTimeout(()=>{swiped=0},80);
+   d.c.style.transition='';
+   if(Math.abs(d.dx)>110){d.c.style.transform=`translateX(${d.dx>0?600:-600}px)`;d.c.style.opacity='0';const id=+d.c.dataset.id;setTimeout(()=>tmClose(id),170)}
+   else{d.c.style.transform='';d.c.style.opacity=''}
+  };
+  g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end);
+  g.addEventListener('click',e=>{
+   if(swiped)return;
+   const x=e.target.closest('[data-tx]');if(x){tmClose(+x.dataset.tx);return}
+   const c=e.target.closest('.tmc');if(c){const id=+c.dataset.id;tmHide();switchTab(id)}
+  });
+ }
+ try{closePanel()}catch(e){}
+ try{$('#menu').classList.remove('on')}catch(e){}
+ tmRender();m.classList.add('on');tabBadge();
+ try{syncNative()}catch(e){}
+}
+function fbShareFallback(title,u){try{if(navigator.share){navigator.share({title,url:u}).catch(()=>{});return}}catch(e){}try{copyText(u);toast('Link copied')}catch(e){toast('Could not share')}}
+function shareCur(){
+ const t=curTab(),u=t&&t.hist[t.pos];
+ if(!u||!isWeb(u)){toast('Open a web page to share it');return}
+ const title=String((t.title&&t.title!==u?t.title:host(u))||u).slice(0,140);
+ try{const s=FSYS();if(s&&s.shareText){s.shareText({title,url:u}).catch(()=>fbShareFallback(title,u));return}}catch(e){}
+ fbShareFallback(title,u);
+}
+(()=>{
+ const tb=$('#tabsbtn'),sb=$('#shbtn');
+ if(tb){tb.innerHTML=ic('tabsq',19)+'<b>1</b>';tb.onclick=e=>{e.stopPropagation();tmShow()}}
+ if(sb){sb.innerHTML=ic('share',18);sb.onclick=e=>{e.stopPropagation();shareCur()}}
+ tabBadge();
 })();
 
 /* ---------- vault unlocked: purple glow around the whole app ---------- */
