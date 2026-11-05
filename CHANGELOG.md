@@ -1,3 +1,7 @@
+## V1.27.13
+- Build check: after Gradle, the pipeline now runs `ci/check-apk.sh` on the APK. It prints the package, versionName, versionCode and launcher icon entries as Android sees them, and fails the build if the versionCode is under 1000 or the icon entry is missing. Look for "APK check passed" in the job log; the versionName line must match the version shown in the app.
+- Why: an APK with the same or a lower versionCode will not replace the installed app, so the phone keeps the old build and its old icon. Builds before V1.27.11 all had versionCode 1.
+- Tested: `bash -n`, and the script against a stand-in aapt2 (passes on a high versionCode, fails on 1). NOT run on real GitLab CI or against a real APK.
 ## V1.27.12
 - Downloads: a finished download is now copied into the phone Downloads folder straight away (a toast says where). Page-made downloads (blob and data links, saved images) too. New switch: Settings > Downloads & Files > Save finished downloads to Downloads (on by default). Off gives the V1.27.0 behaviour: the file stays inside Festers until you tap Save to Downloads or Save as. Old downloads in the list are not touched.
 - Tested: page script syntax, and the auto-save function on its own in Node with stand-in parts (saves a finished download once, skips a repeat event, a job already saved, a job with no browser copy, the switch off, and non-native). The call from the download event handler is one line, read but not run in the real page. NOT compiled, NOT run on a device.

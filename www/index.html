@@ -832,7 +832,7 @@ html.vopen body::after{content:"";position:fixed;inset:0;pointer-events:none;z-i
 </script>
 <script>
 (()=>{'use strict';
-const VERSION='1.27.12';const CONFIG={repo:'philfesters/festers-browser',registerEmail:''};
+const VERSION='1.27.13';const CONFIG={repo:'philfesters/festers-browser',registerEmail:''};
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LS={get(k,d){try{const v=localStorage.getItem('fb:'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('fb:'+k,JSON.stringify(v));mirrorSoon()}catch(e){toast('Storage blocked or full')}if(k==='vault'&&v&&typeof syncKick==='function'){try{syncKick()}catch(e){}}}};
