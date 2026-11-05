@@ -129,6 +129,8 @@ jobs:
           rsvg-convert -w 2732 -h 2732 assets/icon.svg -o assets/splash.png
       - run: npx capacitor-assets generate --android
         continue-on-error: true
+      - name: Install Bojack launcher icon (fails the build if missing)
+        run: bash ci/set-icon.sh android
       - run: npx cap sync android
       - name: Version code and persistent signing key (so updates install over the old app)
         env:
