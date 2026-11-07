@@ -46,6 +46,10 @@ echo "== install apps and file provider =="
 add_after_internet android.permission.REQUEST_INSTALL_PACKAGES
 grep -q REQUEST_INSTALL_PACKAGES "$M" && echo "install packages permission present" || { echo "ERROR: could not add REQUEST_INSTALL_PACKAGES"; exit 1; }
 grep -q 'fileprovider' "$M" && echo "file provider present" || { echo "ERROR: Capacitor FileProvider missing from manifest"; exit 1; }
+# V1.27.15: Open / Save as read the browser copy through the FileProvider. Capacitor's default paths file may not cover app storage on every phone, so ours does.
+mkdir -p android/app/src/main/res/xml
+cp ci/file_paths.xml android/app/src/main/res/xml/file_paths.xml
+grep -q '@xml/file_paths' "$M" && echo "file_paths.xml wired and written" || { echo "ERROR: manifest FileProvider does not point at @xml/file_paths"; exit 1; }
 
 echo "== notification and media permissions =="
 for P in android.permission.POST_NOTIFICATIONS android.permission.WAKE_LOCK android.permission.ACCESS_NETWORK_STATE android.permission.ACCESS_WIFI_STATE; do

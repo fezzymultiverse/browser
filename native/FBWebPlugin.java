@@ -54,6 +54,7 @@ import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.ByteArrayOutputStream;
@@ -2205,20 +2206,36 @@ public class FBWebPlugin extends Plugin {
         JSObject r = new JSObject();
         String[] kept = FBDownloader.get(getContext()).keptInfo(id);
         if (kept == null) { r.put("ok", false); r.put("desc", "The browser copy of this download is not there any more"); call.resolve(r); return; }
-        if (saveAsLauncher == null) { r.put("ok", false); r.put("desc", "Save as is not available here. Use Save to Downloads."); call.resolve(r); return; }
-        if (saveAsCall != null) { JSObject o = new JSObject(); o.put("ok", false); o.put("cancelled", true); saveAsCall.resolve(o); saveAsCall = null; }
         try {
+            // V1.27.16: Capacitor's own startActivityForResult. The earlier registerForActivityResult launcher could silently be null.
             Intent it = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             it.addCategory(Intent.CATEGORY_OPENABLE);
-            it.setType(kept[1]);
+            it.setType(kept[1] == null || kept[1].length() == 0 ? "*/*" : kept[1]);
             it.putExtra(Intent.EXTRA_TITLE, kept[0]);
-            saveAsCall = call; saveAsId = id;
-            saveAsLauncher.launch(it);
+            startActivityForResult(call, it, "saveAsDone");
         } catch (Throwable e) {
-            saveAsCall = null; saveAsId = -1L;
-            r.put("ok", false); r.put("desc", "Could not open the file picker");
+            r.put("ok", false); r.put("desc", "Could not open the file picker (" + e.getClass().getSimpleName() + "). Use Save to Downloads.");
             call.resolve(r);
         }
+    }
+
+    @ActivityCallback
+    private void saveAsDone(final PluginCall call, androidx.activity.result.ActivityResult result) {
+        if (call == null) return;
+        long sid = call.getLong("id", -1L);
+        Intent data = result == null ? null : result.getData();
+        Uri dest = data == null ? null : data.getData();
+        if (result == null || result.getResultCode() != android.app.Activity.RESULT_OK || dest == null) {
+            JSObject r = new JSObject();
+            r.put("ok", false); r.put("cancelled", true); r.put("desc", "Save as was cancelled");
+            call.resolve(r);
+            return;
+        }
+        FBDownloader.get(getContext()).copyKeptTo(sid, dest, (err, info) -> {
+            JSObject r = new JSObject();
+            if (err == null) { r.put("ok", true); r.put("info", info); } else { r.put("ok", false); r.put("desc", err); }
+            call.resolve(r);
+        });
     }
 
     /* ---------- lifecycle ---------- */

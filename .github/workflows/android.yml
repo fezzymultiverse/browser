@@ -68,6 +68,9 @@ jobs:
           grep -q REQUEST_INSTALL_PACKAGES "$M" || sed -i 's#<uses-permission android:name="android.permission.INTERNET" */>#&\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />#' "$M"
           grep -q REQUEST_INSTALL_PACKAGES "$M" && echo "install packages permission present" || { echo "ERROR: could not add REQUEST_INSTALL_PACKAGES"; exit 1; }
           grep -q 'fileprovider' "$M" && echo "file provider present" || { echo "ERROR: Capacitor FileProvider missing from manifest"; exit 1; }
+          mkdir -p android/app/src/main/res/xml
+          cp ci/file_paths.xml android/app/src/main/res/xml/file_paths.xml
+          grep -q '@xml/file_paths' "$M" && echo "file_paths.xml wired and written" || { echo "ERROR: manifest FileProvider does not point at @xml/file_paths"; exit 1; }
       - name: Add browser, notification and media permissions
         run: |
           M=android/app/src/main/AndroidManifest.xml

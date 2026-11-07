@@ -144,7 +144,23 @@ public class FBDownloader {
         return j;
     }
 
+    /** V1.27.15: a finished download with no browser copy and no usable Downloads copy is a ghost. Mark it failed so the list says Retry. */
+    private void reconcile() {
+        for (Job j : new ArrayList<>(jobs.values())) {
+            try {
+                if (!"completed".equals(j.state) || j.url.startsWith("local://")) continue;
+                if (keepFile(j).isFile() && keepFile(j).length() > 0) { j.kept = true; continue; }
+                j.kept = false;
+                boolean there = false;
+                try { there = j.uri.length() > 0 && usable(Uri.parse(j.uri)); } catch (Throwable ignored) { }
+                if (!there) { try { there = resolveSaved(j) != null; } catch (Throwable ignored) { } }
+                if (!there) { j.saved = false; j.uri = ""; j.path = ""; j.error = "The file is no longer on the phone. Tap Retry to download it again."; setState(j, "failed", j.error); }
+            } catch (Throwable ignored) { }
+        }
+    }
+
     public synchronized JSArray list() {
+        reconcile();
         JSArray out = new JSArray();
         List<Job> all = new ArrayList<>(jobs.values());
         for (int i = all.size() - 1; i >= 0; i--) out.put(toJson(all.get(i)));
@@ -167,6 +183,7 @@ public class FBDownloader {
         if (j == null) return false;
         if ("paused".equals(j.state) || "failed".equals(j.state)) {
             j.pause = false; j.cancel = false; j.error = ""; j.netPaused = false;
+            if ("failed".equals(j.state)) { j.kept = false; j.saved = false; j.uri = ""; j.path = ""; try { File pf = partFile(j); if (pf.exists() && j.total > 0 && pf.length() > j.total) pf.delete(); } catch (Throwable ignored) { } }
             setState(j, "queued", "");
             submit(j);
             return true;
@@ -206,55 +223,56 @@ public class FBDownloader {
     }
 
     /** Returns null when a viewer was started, or a short reason. */
+    /** V1.27.16: the type an app is asked to open the file as. Servers often say application/octet-stream (or add "; charset=..."),
+     *  and no viewer claims that, so Open failed with "No app can open this file". Fall back to the file extension. */
+    private String viewMime(Job j) {
+        String m = j.mime == null ? "" : j.mime.trim().toLowerCase(Locale.US);
+        int sc = m.indexOf(';');
+        if (sc >= 0) m = m.substring(0, sc).trim();
+        if (m.length() == 0 || m.indexOf('/') < 0 || m.equals("application/octet-stream") || m.equals("binary/octet-stream")
+            || m.equals("application/force-download") || m.equals("application/x-download") || m.equals("application/download")) {
+            return mimeByName(j.path.length() > 0 ? j.path : j.name);
+        }
+        return m;
+    }
+
     public String open(long id) {
         Job j;
         synchronized (this) { j = jobs.get(id); }
         if (j == null) return "That download is no longer in the list";
         if (!"completed".equals(j.state)) return "The download is not finished yet";
+        openWhy = "";
+        String mt0 = viewMime(j);
+        // 1) the browser's own copy first; it never goes missing when Android's Downloads entry does
+        Uri kept = keepUri(j);
+        if (kept != null && viewUri(kept, mt0)) return null;
+        // 2) the copy in Downloads (written now from the browser copy if there is no usable link yet)
         Uri target = null;
-        try { if (j.uri.length() > 0) target = Uri.parse(j.uri); } catch (Throwable ignored) { }
-        String mt0 = j.mime.length() == 0 ? mimeByName(j.path.length() > 0 ? j.path : j.name) : j.mime;
-        { // V1.26.0: the browser's own copy first; it never goes missing when Android's Downloads entry does
-            Uri kept = keepUri(j);
-            if (kept != null && viewUri(kept, mt0)) return null;
-        }
-        if (target != null) { // V1.25.0: just try the saved link; do not pre-check it (some phones refuse the check on a file that is there)
-            try {
-                Intent it0 = new Intent(Intent.ACTION_VIEW);
-                it0.setDataAndType(target, mt0);
-                it0.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-                ctx.startActivity(it0);
-                return null;
-            } catch (android.content.ActivityNotFoundException e0) { return "No app can open this file";
-            } catch (Throwable ignored) { }
-        }
-        target = resolveSaved(j);
+        try { if (j.uri.length() > 0) { Uri u = Uri.parse(j.uri); if (usable(u)) target = u; } } catch (Throwable ignored) { }
         if (target == null) {
-            // V1.24.0: could not match the file by any route. Do not just say "gone": open the Downloads app so the person can find it, and say what was looked for.
-            String shown = j.path.length() > 0 ? j.path : j.name;
             try {
-                Intent dl = new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS);
-                dl.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                ctx.startActivity(dl);
-                return "Festers could not match \"" + shown + "\", so the Downloads app is open. It may have been moved or deleted.";
-            } catch (Throwable ignored) { }
-            return "Could not find \"" + shown + "\" in Downloads (it may have been moved or deleted)";
+                File kf = keepFile(j);
+                if (kf.isFile() && kf.length() > 0) {
+                    String why = openWhy;
+                    writePublic(j, kf);
+                    if (j.uri.length() > 0) target = Uri.parse(j.uri);
+                    openWhy = why;
+                }
+            } catch (Throwable e) { openWhy = openWhy + (openWhy.length() > 0 ? "; " : "") + "copy to Downloads failed: " + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()); }
         }
-        String mt = j.mime.length() == 0 ? mimeByName(j.path.length() > 0 ? j.path : j.name) : j.mime;
+        if (target == null) target = resolveSaved(j);
+        if (target != null && viewUri(target, mt0)) return null;
+        String shown = j.path.length() > 0 ? j.path : j.name;
+        if (target != null) {
+            return "No app could open \"" + shown + "\" (" + mt0 + (openWhy.length() > 0 ? "; " + openWhy : "") + "). It is saved: use Save as, or install an app that opens this type.";
+        }
         try {
-            Intent it = new Intent(Intent.ACTION_VIEW);
-            it.setDataAndType(target, mt);
-            it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-            ctx.startActivity(it);
-            return null;
-        } catch (Throwable e) {
-            try {
-                Intent it = new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS);
-                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                ctx.startActivity(it);
-                return null;
-            } catch (Throwable e2) { return "No app can open this file"; }
-        }
+            Intent dl = new Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS);
+            dl.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx.startActivity(dl);
+            return "Festers could not open \"" + shown + "\"" + (openWhy.length() > 0 ? " (" + openWhy + ")" : "") + ", so the Downloads app is open.";
+        } catch (Throwable ignored) { }
+        return "Could not open \"" + shown + "\"" + (openWhy.length() > 0 ? ": " + openWhy : " (it may have been moved or deleted)");
     }
 
     /** V1.23.8: finds the saved file again however it is stored, so Open never says "gone" for a file that is really there. */
@@ -511,11 +529,21 @@ public class FBDownloader {
         synchronized (this) { setState(j, "saving", ""); }
         j.speed = 0;
         if (j.name.length() == 0) j.name = "festers-" + System.currentTimeMillis();
-        if (!keepCopy(j, part)) throw new Exception("Could not save: the browser storage could not be written (is the phone full?)");
-        j.kept = true;
-        j.saved = false;
-        j.uri = "";
-        j.path = "";
+        if (keepCopy(j, part)) {
+            j.kept = true;
+            j.saved = false;
+            j.uri = "";
+            j.path = "";
+        } else {
+            // V1.27.15: app storage refused the file. Do not fail the download: write it straight into the phone's Downloads folder.
+            try {
+                writePublic(j, part);
+                j.kept = false;
+                try { part.delete(); } catch (Throwable ignored) { }
+            } catch (Throwable e2) {
+                throw new Exception("Could not save: neither browser storage nor Downloads could be written (" + (e2.getMessage() == null ? e2.getClass().getSimpleName() : e2.getMessage()) + "). Is the phone full?");
+            }
+        }
         synchronized (this) {
             j.bytes = j.total > 0 ? j.total : j.bytes;
             j.error = "";
@@ -528,7 +556,8 @@ public class FBDownloader {
     /** Copies the browser copy into the phone's public Downloads folder (MediaStore on Android 10+, plain file below). */
     private void writePublic(Job j, File src) throws Exception {
         String name = j.name.length() == 0 ? "festers-" + System.currentTimeMillis() : j.name;
-        String mime = j.mime.length() == 0 ? "application/octet-stream" : j.mime;
+        String mime = viewMime(j);
+        if ("*/*".equals(mime)) mime = "application/octet-stream";
         if (Build.VERSION.SDK_INT >= 29) {
             ContentResolver cr = ctx.getContentResolver();
             ContentValues cv = new ContentValues();
@@ -631,8 +660,7 @@ public class FBDownloader {
         if (j == null || !"completed".equals(j.state)) return null;
         File f = keepFile(j);
         if (!f.isFile() || f.length() == 0) return null;
-        String mt = j.mime.length() == 0 ? mimeByName(j.name) : j.mime;
-        return new String[]{j.name, mt};
+        return new String[]{j.name, viewMime(j)};
     }
 
     /** Page-made downloads (blob: and data: links, saved images) have no network job. They are put in the same list, already finished. */
@@ -702,22 +730,34 @@ public class FBDownloader {
     }
 
     /** The in-app copy as a content link for viewer apps, or null when there is none. */
+    private volatile String openWhy = "";
+
     private Uri keepUri(Job j) {
         try {
             File f = keepFile(j);
-            if (!f.isFile() || f.length() == 0) return null;
+            if (!f.isFile() || f.length() == 0) { openWhy = "the browser copy is missing"; return null; }
             return androidx.core.content.FileProvider.getUriForFile(ctx, ctx.getPackageName() + ".fileprovider", f);
-        } catch (Throwable e) { return null; }
+        } catch (Throwable e) { openWhy = "file link failed: " + e.getClass().getSimpleName(); return null; }
     }
 
     private boolean viewUri(Uri u, String mime) {
-        try {
-            Intent it = new Intent(Intent.ACTION_VIEW);
-            it.setDataAndType(u, mime);
-            it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-            ctx.startActivity(it);
-            return true;
-        } catch (Throwable e) { return false; }
+        String[] tries = "*/*".equals(mime) ? new String[]{"*/*"} : new String[]{mime, "*/*"};
+        for (int i = 0; i < tries.length; i++) {
+            try {
+                Intent it = new Intent(Intent.ACTION_VIEW);
+                it.setDataAndType(u, tries[i]);
+                try { it.setClipData(android.content.ClipData.newRawUri("", u)); } catch (Throwable ignored) { } // grants the read permission reliably on Android 10+
+                it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                if (i == 0) ctx.startActivity(it);
+                else { Intent ch = Intent.createChooser(it, "Open with"); ch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); ctx.startActivity(ch); }
+                return true;
+            } catch (android.content.ActivityNotFoundException e) {
+                openWhy = "no app on this phone opens " + tries[i];
+            } catch (Throwable e) {
+                openWhy = "viewer failed: " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " " + e.getMessage());
+            }
+        }
+        return false;
     }
 
     private void deletePublic(Job j) {
